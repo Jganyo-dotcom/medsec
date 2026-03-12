@@ -118,4 +118,25 @@ const getAllHospitals = async (req, res) => {
   }
 };
 
-module.exports = { registerHospital, getAllHospitals };
+//  delete hospital by ID
+const deleteHospitalById = async (req, res) => {
+  try {
+    const { id } = req.params; // hospital ID from URL
+
+    const hospital = await Hospitals.findByIdAndDelete(id);
+
+    if (!hospital) {
+      return res.status(404).json({ message: "Hospital not found" });
+    }
+
+    return res.status(200).json({
+      message: "Hospital deleted successfully",
+      hospital,
+    });
+  } catch (err) {
+    console.error("Error deleting hospital:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+module.exports = { registerHospital, getAllHospitals, deleteHospitalById };
