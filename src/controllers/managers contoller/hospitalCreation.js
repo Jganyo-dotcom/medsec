@@ -139,4 +139,38 @@ const deleteHospitalById = async (req, res) => {
   }
 };
 
-module.exports = { registerHospital, getAllHospitals, deleteHospitalById };
+const disableHospital = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const hospital = await Hospitals.findByIdAndUpdate(
+      id,
+      { isdisabled: true },
+      { new: true }, // return updated document
+    );
+
+    if (!hospital) {
+      return res.status(404).json({ message: "Hospital not found" });
+    }
+
+    return res.status(200).json({
+      message: "Hospital disabled successfully",
+      hospital: {
+        id: hospital._id,
+        name: hospital.hospitalName.name,
+        code: hospital.hospitalName.code,
+        isdisabled: hospital.isdisabled,
+      },
+    });
+  } catch (err) {
+    console.error("Error disabling hospital:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+module.exports = {
+  registerHospital,
+  getAllHospitals,
+  deleteHospitalById,
+  disableHospital,
+};

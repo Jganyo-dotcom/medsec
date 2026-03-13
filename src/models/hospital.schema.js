@@ -21,6 +21,7 @@ const HospitalSchema = new mongoose.Schema(
     },
 
     hasChangedPassword: { type: Boolean, default: false },
+    isdisabled: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
