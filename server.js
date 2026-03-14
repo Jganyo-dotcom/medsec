@@ -13,9 +13,9 @@ connection();
 app.use(morgan("dev"));
 
 
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
+// app.get("/", (req, res) => {
+//   res.send("Hello World!");
+// });
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/api", managerRoute);
 
