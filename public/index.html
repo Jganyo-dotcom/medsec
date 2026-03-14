@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hospital Management | Admin Portal</title>
+    <style>
+      :root {
+        --primary: #2563eb;
+        --primary-dark: #1d4ed8;
+        --bg: #f8fafc;
+        --card-bg: #ffffff;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --success: #22c55e;
+        --error: #ef4444;
+      }
+
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        background-color: var(--bg);
+        color: var(--text-main);
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      /* Professional Header */
+      header {
+        width: 100%;
+        background: var(--card-bg);
+        padding: 1.5rem 0;
+        border-bottom: 1px solid var(--border);
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      header h1 {
+        margin: 0;
+        color: var(--primary);
+        font-size: 1.75rem;
+        letter-spacing: -0.025em;
+      }
+
+      .container {
+        width: 90%;
+        max-width: 1100px;
+        display: grid;
+        grid-template-columns: 1fr 1.5fr;
+        gap: 2rem;
+        margin-bottom: 4rem;
+      }
+
+      /* Card Styling */
+      .card {
+        background: var(--card-bg);
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow:
+          0 4px 6px -1px rgba(0, 0, 0, 0.1),
+          0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        border: 1px solid var(--border);
+      }
+
+      h2 {
+        margin-top: 0;
+        font-size: 1.25rem;
+        border-bottom: 2px solid var(--bg);
+        padding-bottom: 0.75rem;
+        color: var(--text-main);
+      }
+
+      h3 {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+        margin-top: 2rem;
+      }
+
+      /* Form Controls */
+      .form-group {
+        margin-bottom: 1.25rem;
+      }
+
+      label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text-main);
+      }
+
+      input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 0.95rem;
+        box-sizing: border-box;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+
+      button {
+        width: 100%;
+        padding: 0.75rem;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+        margin-top: 1rem;
+      }
+
+      button:hover {
+        background: var(--primary-dark);
+      }
+
+      button#fetchHospitals {
+        background: transparent;
+        border: 1px solid var(--primary);
+        color: var(--primary);
+        width: auto;
+        padding: 0.5rem 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      button#fetchHospitals:hover {
+        background: rgba(37, 99, 235, 0.05);
+      }
+
+      /* Table Styling */
+      .table-container {
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+      }
+
+      th {
+        background: var(--bg);
+        color: var(--text-muted);
+        font-weight: 600;
+        text-align: left;
+        padding: 1rem;
+        border-bottom: 2px solid var(--border);
+      }
+
+      td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-main);
+      }
+
+      tr:hover {
+        background: #fdfdfd;
+      }
+
+      /* Utils */
+      .message {
+        margin-top: 1rem;
+        padding: 0.75rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        text-align: center;
+        display: none;
+      }
+
+      .loader {
+        border: 3px solid var(--border);
+        border-top: 3px solid var(--primary);
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto 10px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (max-width: 900px) {
+        .container {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Hospital Admin Console</h1>
+    </header>
+
+    <div class="container">
+      <section class="card">
+        <h2>Register New Facility</h2>
+        <form id="hospitalForm">
+          <div class="form-group">
+            <label>Hospital Name</label>
+            <input
+              type="text"
+              name="h_name"
+              placeholder="City Medical Center"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label>Physical Address</label>
+            <input
+              type="text"
+              name="addresse"
+              placeholder="123 Health Ave, Accra"
+              required
+            />
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Phone</label>
+              <input
+                type="text"
+                name="h_phone"
+                placeholder="+233..."
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input
+                type="email"
+                name="h_email"
+                placeholder="contact@hospital.com"
+                required
+              />
+            </div>
+          </div>
+
+          <h3>Authorized Representative</h3>
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" name="r_name" required />
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Rep Phone</label>
+              <input type="text" name="r_phone" required />
+            </div>
+            <div class="form-group">
+              <label>Rep Email</label>
+              <input type="email" name="r_email" required />
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Password</label>
+              <input type="password" name="r_password" required />
+            </div>
+            <div class="form-group">
+              <label>Confirm</label>
+              <input type="password" name="r_confirm_password" required />
+            </div>
+          </div>
+
+          <button type="submit">Complete Registration</button>
+          <div class="message" id="message"></div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Facility Directory</h2>
+        <button id="fetchHospitals">Refresh Directory</button>
+
+        <div id="hospitalLoader" style="display: none">
+          <div class="loader"></div>
+          <p style="text-align: center; color: var(--text-muted)">
+            Syncing with database...
+          </p>
+        </div>
+
+        <div class="table-container" id="hospitalTable">
+          <p style="color: var(--text-muted); text-align: center">
+            Click "Refresh" to load data.
+          </p>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const form = document.getElementById("hospitalForm");
+      const messageBox = document.getElementById("message");
+      const fetchBtn = document.getElementById("fetchHospitals");
+      const hospitalLoader = document.getElementById("hospitalLoader");
+      const hospitalTable = document.getElementById("hospitalTable");
+
+      function showMessage(text, type) {
+        messageBox.style.display = "block";
+        messageBox.textContent = text;
+        messageBox.style.backgroundColor =
+          type === "success" ? "#dcfce7" : "#fee2e2";
+        messageBox.style.color = type === "success" ? "#166534" : "#991b1b";
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        showMessage("Processing registration...", "success");
+
+        try {
+          const response = await fetch(
+            "http://127.0.0.1:4444/api/register-hospital",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            },
+          );
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            showMessage(
+              result.message || result.error || "Registration failed.",
+              "error",
+            );
+          } else {
+            showMessage("Hospital successfully registered.", "success");
+            form.reset();
+          }
+        } catch (err) {
+          showMessage("Connection error. Is the backend running?", "error");
+        }
+      });
+
+      fetchBtn.addEventListener("click", async () => {
+        hospitalLoader.style.display = "block";
+        hospitalTable.innerHTML = "";
+
+        try {
+          const response = await fetch(
+            "http://127.0.0.1:4444/api/get-hospitals",
+          );
+          const result = await response.json();
+          hospitalLoader.style.display = "none";
+
+          if (
+            !response.ok ||
+            !result.hospitals ||
+            result.hospitals.length === 0
+          ) {
+            hospitalTable.innerHTML = `<p style="text-align:center; color:var(--text-muted);">No facilities found.</p>`;
+            return;
+          }
+
+          let html = `<table>
+                    <thead>
+                        <tr>
+                            <th>Hospital</th>
+                            <th>Code</th>
+                            <th>Contact</th>
+                            <th>Representative</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+          result.hospitals.forEach((h) => {
+            html += `<tr>
+                        <td><strong>${h.hospitalDetails.name}</strong><br><small>${h.hospitalDetails.addresse}</small></td>
+                        <td><code>${h.hospitalDetails.code}</code></td>
+                        <td>${h.hospitalDetails.contact.phone}<br>${h.hospitalDetails.contact.email}</td>
+                        <td>${h.hospitalRep.name}<br><small>${h.hospitalRep.email}</small></td>
+                        <td>
+                        <button class="delete-btn" data-id="${h._id}" style="background:#d9534f;color:white;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">
+                            Delete
+                        </button>
+                         </td>
+                    </tr>`;
+          });
+
+          html += "</tbody></table>";
+          hospitalTable.innerHTML = html;
+          document.querySelectorAll(".delete-btn").forEach((btn) => {
+            btn.addEventListener("click", async (e) => {
+              const id = e.target.getAttribute("data-id");
+              if (!confirm("Are you sure you want to delete this hospital?"))
+                return;
+
+              try {
+                const response = await fetch(
+                  `http://127.0.0.1:4444/api/delete-hospital/${id}`,
+                  {
+                    method: "DELETE",
+                  },
+                );
+                const result = await response.json();
+
+                if (!response.ok) {
+                  alert(result.message || "Failed to delete hospital.");
+                } else {
+                  alert("Hospital deleted successfully.");
+                  // Refresh hospital list after deletion
+                  document.getElementById("fetchHospitals").click();
+                }
+              } catch (err) {
+                console.error("Error deleting hospital:", err);
+                alert("Error connecting to server.");
+              }
+            });
+          });
+        } catch (err) {
+          hospitalLoader.style.display = "none";
+          hospitalTable.innerHTML =
+            "<p style='color:var(--error); text-align:center;'>Database sync failed.</p>";
+        }
+      });
+    </script>
+  </body>
+</html>
