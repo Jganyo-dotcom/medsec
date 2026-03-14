@@ -373,7 +373,7 @@
 
         try {
           const response = await fetch(
-            "http://127.0.0.1:4444/api/get-hospitals",
+            "https://medsec.onrender.com/api/get-hospitals",
           );
           const result = await response.json();
           hospitalLoader.style.display = "none";
@@ -423,7 +423,7 @@
 
               try {
                 const response = await fetch(
-                  `http://127.0.0.1:4444/api/delete-hospital/${id}`,
+                  `https://medsec.onrender.com/api/delete-hospital/${id}`,
                   {
                     method: "DELETE",
                   },
