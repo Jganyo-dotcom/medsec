@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verify Access | Secure Login</title>
+    <style>
+      :root {
+        --primary: #2563eb;
+        --primary-hover: #1d4ed8;
+        --bg: #f1f5f9;
+        --card-bg: #ffffff;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --error: #ef4444;
+        --success: #10b981;
+      }
+
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          sans-serif;
+        background-color: var(--bg);
+        color: var(--text-main);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+      }
+
+      .verify-card {
+        background: var(--card-bg);
+        width: 100%;
+        max-width: 420px;
+        padding: 2.5rem;
+        border-radius: 16px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--border);
+        text-align: center;
+      }
+
+      .icon-box {
+        width: 64px;
+        height: 64px;
+        background: #eff6ff;
+        color: var(--primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        font-size: 1.5rem;
+      }
+
+      .header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+
+      .header p {
+        margin: 0.5rem 0 2rem;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+
+      input#otp {
+        width: 100%;
+        padding: 1rem;
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: 0.5rem;
+        text-align: center;
+        box-sizing: border-box;
+        transition: all 0.2s;
+        background-color: #f8fafc;
+      }
+
+      input#otp:focus {
+        outline: none;
+        border-color: var(--primary);
+        background-color: #fff;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+      }
+
+      input#otp::placeholder {
+        letter-spacing: normal;
+        font-size: 1rem;
+        font-weight: 400;
+        color: #cbd5e1;
+      }
+
+      button {
+        width: 100%;
+        padding: 0.8rem;
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      button:hover {
+        background-color: var(--primary-hover);
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .resend-section {
+        margin-top: 1.5rem;
+        font-size: 0.875rem;
+        color: var(--text-muted);
+      }
+
+      .resend-btn {
+        background: none;
+        border: none;
+        color: var(--primary);
+        font-weight: 600;
+        padding: 0;
+        width: auto;
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      .resend-btn:hover {
+        text-decoration: underline;
+      }
+
+      #statusMessage {
+        margin-top: 1rem;
+        padding: 0.75rem;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        display: none;
+      }
+
+      .error-msg {
+        background: #fef2f2;
+        color: var(--error);
+        border: 1px solid #fee2e2;
+      }
+      .success-msg {
+        background: #f0fdf4;
+        color: var(--success);
+        border: 1px solid #dcfce7;
+      }
+
+      /* Simple loading spinner */
+      .spinner {
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top: 2px solid #fff;
+        border-radius: 50%;
+        width: 14px;
+        height: 14px;
+        animation: spin 0.8s linear infinite;
+        display: inline-block;
+        margin-right: 8px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="verify-card">
+      <div class="icon-box">✉️</div>
+      <div class="header">
+        <h2>Verify Your Email</h2>
+        <p>
+          We've sent a 6-digit security code to your registered email address.
+        </p>
+      </div>
+
+      <div id="statusMessage"></div>
+
+      <form id="verifyForm">
+        <div class="form-group">
+          <input
+            type="text"
+            id="otp"
+            placeholder="000000"
+            maxlength="6"
+            pattern="\d{6}"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            required
+          />
+        </div>
+
+        <button type="submit" id="verifyBtn">Verify & Proceed</button>
+      </form>
+
+      <div class="resend-section">
+        Didn't receive the code? <br />
+        <button type="button" class="resend-btn" id="resendBtn">
+          Resend Code
+        </button>
+        <span id="timer"></span>
+      </div>
+    </div>
+
+    <script>
+      const BASE_URL = "http://127.0.0.1:4444/api";
+      const urlParams = new URLSearchParams(window.location.search);
+      const hospitalId = urlParams.get("hospitalId");
+      const statusMessage = document.getElementById("statusMessage");
+      const verifyBtn = document.getElementById("verifyBtn");
+      const resendBtn = document.getElementById("resendBtn");
+
+      // UI Feedback Helper
+      function showStatus(msg, type) {
+        statusMessage.textContent = msg;
+        statusMessage.className =
+          type === "error" ? "error-msg" : "success-msg";
+        statusMessage.style.display = "block";
+        statusMessage.classList.add(
+          type === "error" ? "error-msg" : "success-msg",
+        );
+      }
+
+      document
+        .getElementById("verifyForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          verifyBtn.disabled = true;
+          verifyBtn.innerHTML = '<span class="spinner"></span> Verifying...';
+          statusMessage.style.display = "none";
+
+          const code = document.getElementById("otp").value;
+
+          try {
+        const res = await fetch(`${BASE_URL}/verify-login`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ hospitalId, code }),
+            });
+
+            const data = await res.json();
+
+            if (res.status === 200) {
+              localStorage.setItem("token", data.token);
+              showStatus("Verification successful! Redirecting...", "success");
+              setTimeout(() => {
+                window.location.href = "/IT.html";
+              }, 1500);
+            } else {
+              showStatus(
+                data.message || "Invalid code. Please try again.",
+                "error",
+              );
+              verifyBtn.disabled = false;
+              verifyBtn.innerHTML = "Verify & Proceed";
+            }
+          } catch (err) {
+            showStatus("Connection error. Please try again later.", "error");
+            verifyBtn.disabled = false;
+            verifyBtn.innerHTML = "Verify & Proceed";
+          }
+        });
+
+      // Simple Resend Logic (Placeholder for your backend)
+      resendBtn.addEventListener("click", () => {
+        // You would typically call your resend API here
+        showStatus("A new code has been sent to your email.", "success");
+
+        // Disable resend for 60 seconds
+        resendBtn.disabled = true;
+        let timeLeft = 60;
+        const timerInterval = setInterval(() => {
+          document.getElementById("timer").textContent =
+            `(Resend in ${timeLeft}s)`;
+          timeLeft--;
+          if (timeLeft < 0) {
+            clearInterval(timerInterval);
+            resendBtn.disabled = false;
+            document.getElementById("timer").textContent = "";
+          }
+        }, 1000);
+      });
+    </script>
+  </body>
+</html>

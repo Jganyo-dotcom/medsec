@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal | Hospital System</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --sidebar-width: 260px;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --bg-body: #f1f5f9;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --error: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    * { box-sizing: border-box; }
+    body { 
+      font-family: 'Inter', system-ui, sans-serif; 
+      margin: 0; 
+      display: flex; 
+      height: 100vh; 
+      background: var(--bg-body); 
+      color: var(--text-main);
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: #1e293b;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 2rem 1.5rem;
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #334155;
+    }
+
+    .nav-links {
+      flex-grow: 1;
+      padding: 1rem;
+      list-style: none;
+      margin: 0;
+    }
+
+    .nav-item {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #94a3b8;
+      transition: 0.2s;
+    }
+
+    .nav-item.active { background: var(--primary); color: white; }
+    .nav-item:hover:not(.active) { background: #334155; color: white; }
+
+    /* Main View Area */
+    .main-wrapper {
+      flex-grow: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header.top-bar {
+      background: var(--bg-card);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .content-padding { padding: 2rem; max-width: 1400px; margin: 0 auto; width: 100%; }
+
+    /* Dashboard Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .stat-icon {
+      height: 48px; width: 48px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 1.25rem;
+    }
+
+    /* Main Grid Layout */
+    .dashboard-layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-header h2 { margin: 0; font-size: 1.1rem; }
+
+    .card-body { padding: 1.5rem; }
+
+    /* Form Design */
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.4rem; }
+    input {
+      width: 100%; padding: 0.65rem; border: 1px solid var(--border); border-radius: 6px;
+      font-size: 0.9rem; transition: 0.2s;
+    }
+    input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+    /* Buttons */
+    .btn {
+      padding: 0.6rem 1.2rem; border-radius: 6px; border: none; font-weight: 600; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; transition: 0.2s;
+    }
+    .btn-primary { background: var(--primary); color: white; width: 100%; justify-content: center; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+    .btn-outline:hover { background: var(--bg-body); border-color: var(--primary); color: var(--primary); }
+
+    /* Table Styles */
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 1rem; background: #f8fafc; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; }
+    td { padding: 1rem; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+    
+    .status-badge {
+      padding: 4px 8px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    }
+    .status-active { background: #dcfce7; color: #166534; }
+    .status-inactive { background: #fee2e2; color: #991b1b; }
+
+    .action-group { display: flex; gap: 4px; }
+    .icon-btn {
+      padding: 6px; border-radius: 4px; border: 1px solid var(--border); background: white; cursor: pointer; color: var(--text-muted);
+    }
+    .icon-btn:hover { color: var(--primary); border-color: var(--primary); }
+
+    @media (max-width: 1200px) { .dashboard-layout { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <i class="fas fa-hospital-user" style="color: var(--primary)"></i>
+      <span>MediAdmin</span>
+    </div>
+    <ul class="nav-links">
+      <li class="nav-item active"><i class="fas fa-th-large"></i> Dashboard</li>
+      <li class="nav-item"><i class="fas fa-building-medical"></i> All Facilities</li>
+      <li class="nav-item"><i class="fas fa-user-shield"></i> User Roles</li>
+      <li class="nav-item"><i class="fas fa-chart-line"></i> Analytics</li>
+      <li class="nav-item"><i class="fas fa-cog"></i> System Settings</li>
+    </ul>
+  </aside>
+
+  <div class="main-wrapper">
+    <!-- TOP BAR -->
+    <header class="top-bar">
+      <div>
+        <h3 style="margin:0; font-size: 1.2rem;">Hospital Admin Console</h3>
+        <small style="color: var(--text-muted)">Welcome back, Super Admin</small>
+      </div>
+      <div style="display: flex; gap: 1rem; align-items: center;">
+        <button class="btn btn-outline" id="runActivityCheck">
+          <i class="fas fa-sync-alt"></i> Run Audit
+        </button>
+        <div style="width: 32px; height: 32px; background: #ddd; border-radius: 50%;"></div>
+      </div>
+    </header>
+
+    <div class="content-padding">
+      
+      <!-- STATS OVERVIEW -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #eff6ff; color: #3b82f6;"><i class="fas fa-users"></i></div>
+          <div>
+            <label>Total Staff Accounts</label>
+            <h2 id="statTotalStaff" style="margin:0">0</h2>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #f0fdf4; color: #22c55e;"><i class="fas fa-hospital"></i></div>
+          <div>
+            <label>Active Facilities</label>
+            <h2 id="statActive" style="margin:0">--</h2>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #fff7ed; color: #f97316;"><i class="fas fa-exclamation-triangle"></i></div>
+          <div>
+            <label>Inactive Alerts</label>
+            <h2 style="margin:0">3</h2>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-layout">
+        
+        <!-- REGISTRATION COLUMN -->
+        <section class="card">
+          <div class="card-header">
+            <h2><i class="fas fa-plus-circle"></i> New Facility</h2>
+          </div>
+          <div class="card-body">
+            <form id="hospitalForm">
+              <div class="form-group">
+                <label>Hospital Name</label>
+                <input type="text" name="h_name" placeholder="City Medical Center" required />
+              </div>
+              <div class="form-group">
+                <label>Physical Address</label>
+                <input type="text" name="addresse" placeholder="123 Health Ave, Accra" required />
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-group">
+                  <label>Phone</label>
+                  <input type="text" name="h_phone" placeholder="+233..." required />
+                </div>
+                <div class="form-group">
+                  <label>Email</label>
+                  <input type="email" name="h_email" placeholder="contact@hosp.com" required />
+                </div>
+              </div>
+
+              <div style="margin: 1.5rem 0 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+                <label style="color: var(--primary); margin-bottom: 1rem;">AUTHORIZED REPRESENTATIVE</label>
+                <div class="form-group">
+                  <label>Full Name</label>
+                  <input type="text" name="r_name" required />
+                </div>
+                <div class="form-group">
+                  <label>Rep Email</label>
+                  <input type="email" name="r_email" required />
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                  <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" name="r_password" required />
+                  </div>
+                  <div class="form-group">
+                    <label>Confirm</label>
+                    <input type="password" name="r_confirm_password" required />
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Provision Facility</button>
+              <div class="message" id="message"></div>
+            </form>
+          </div>
+        </section>
+
+        <!-- DIRECTORY COLUMN -->
+        <section class="card">
+          <div class="card-header">
+            <h2><i class="fas fa-list"></i> Facility Directory</h2>
+            <button id="fetchHospitals" class="btn btn-outline" style="padding: 4px 12px; font-size: 0.75rem;">
+               <i class="fas fa-sync"></i> Refresh
+            </button>
+          </div>
+          
+          <div id="hospitalLoader" style="display: none; padding: 2rem; text-align: center;">
+             <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary)"></i>
+             <p>Syncing Database...</p>
+          </div>
+
+          <div class="table-container" id="hospitalTable">
+             <div style="padding: 3rem; text-align: center; color: var(--text-muted)">
+                <i class="fas fa-database" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                <p>Click Refresh to load system data</p>
+             </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* Logic remains largely the same but updated for UI changes */
+    const BASE_URL = "http://127.0.0.1:4444/api";
+    const hospitalTable = document.getElementById("hospitalTable");
+    const hospitalLoader = document.getElementById("hospitalLoader");
+
+    // Dynamic UI Update for Table
+    function renderHospitals(hospitals) {
+      if (!hospitals || hospitals.length === 0) {
+        hospitalTable.innerHTML = `<p style="padding:2rem; text-align:center;">No facilities found.</p>`;
+        return;
+      }
+
+      let html = `<table>
+        <thead>
+          <tr>
+            <th>Facility</th>
+            <th>Security Status</th>
+            <th>Representative</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+      hospitals.forEach(h => {
+        const isActive = h.isactive ? "status-active" : "status-inactive";
+        html += `
+          <tr>
+            <td>
+              <div style="font-weight:700">${h.hospitalDetails.name}</div>
+              <code style="font-size:0.7rem; color:var(--text-muted)">${h.hospitalDetails.code}</code>
+            </td>
+            <td>
+              <span class="status-badge ${isActive}">${h.isactive ? 'Active' : 'Inactive'}</span>
+              <div style="font-size:0.7rem; margin-top:4px">Mode: ${h.isdisabled ? 'Disabled' : 'Live'}</div>
+            </td>
+            <td>
+              <div>${h.hospitalRep.name}</div>
+              <div style="font-size:0.75rem; color:var(--text-muted)">${h.hospitalRep.email}</div>
+            </td>
+            <td>
+              <div class="action-group">
+                <button class="icon-btn action-btn email" data-id="${h._id}" title="Email Details"><i class="fas fa-envelope"></i></button>
+                <button class="icon-btn action-btn disable" data-id="${h._id}" title="Disable"><i class="fas fa-ban"></i></button>
+                <button class="icon-btn action-btn delete" data-id="${h._id}" title="Delete" style="color:var(--error)"><i class="fas fa-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+      html += `</tbody></table>`;
+      hospitalTable.innerHTML = html;
+    }
+
+    // Connect existing logic (fetchHospitals listener) to renderHospitals function
+    document.getElementById("fetchHospitals").addEventListener("click", async () => {
+        hospitalLoader.style.display = "block";
+        hospitalTable.innerHTML = "";
+        try {
+            const response = await fetch(`${BASE_URL}/get-hospitals`);
+            const result = await response.json();
+            renderHospitals(result.hospitals);
+        } catch (err) {
+            hospitalTable.innerHTML = `<p style="color:var(--error); padding:2rem;">Connection Error</p>`;
+        } finally {
+            hospitalLoader.style.display = "none";
+        }
+    });
+  </script>
+</body>
+</html>
