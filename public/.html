@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,13 +21,16 @@
       --warning: #f59e0b;
     }
 
-    * { box-sizing: border-box; }
-    body { 
-      font-family: 'Inter', system-ui, sans-serif; 
-      margin: 0; 
-      display: flex; 
-      height: 100vh; 
-      background: var(--bg-body); 
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      margin: 0;
+      display: flex;
+      height: 100vh;
+      background: var(--bg-body);
       color: var(--text-main);
     }
 
@@ -69,8 +73,15 @@
       transition: 0.2s;
     }
 
-    .nav-item.active { background: var(--primary); color: white; }
-    .nav-item:hover:not(.active) { background: #334155; color: white; }
+    .nav-item.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .nav-item:hover:not(.active) {
+      background: #334155;
+      color: white;
+    }
 
     /* Main View Area */
     .main-wrapper {
@@ -92,7 +103,12 @@
       z-index: 10;
     }
 
-    .content-padding { padding: 2rem; max-width: 1400px; margin: 0 auto; width: 100%; }
+    .content-padding {
+      padding: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
 
     /* Dashboard Stats Grid */
     .stats-grid {
@@ -113,8 +129,13 @@
     }
 
     .stat-icon {
-      height: 48px; width: 48px; border-radius: 10px;
-      display: flex; align-items: center; justify-content: center; font-size: 1.25rem;
+      height: 48px;
+      width: 48px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
     }
 
     /* Main Grid Layout */
@@ -129,7 +150,7 @@
       background: var(--bg-card);
       border-radius: 12px;
       border: 1px solid var(--border);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
       overflow: hidden;
     }
 
@@ -141,48 +162,142 @@
       align-items: center;
     }
 
-    .card-header h2 { margin: 0; font-size: 1.1rem; }
+    .card-header h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
 
-    .card-body { padding: 1.5rem; }
+    .card-body {
+      padding: 1.5rem;
+    }
 
     /* Form Design */
-    .form-group { margin-bottom: 1rem; }
-    label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.4rem; }
-    input {
-      width: 100%; padding: 0.65rem; border: 1px solid var(--border); border-radius: 6px;
-      font-size: 0.9rem; transition: 0.2s;
+    .form-group {
+      margin-bottom: 1rem;
     }
-    input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      transition: 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
 
     /* Buttons */
     .btn {
-      padding: 0.6rem 1.2rem; border-radius: 6px; border: none; font-weight: 600; cursor: pointer;
-      display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; transition: 0.2s;
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      transition: 0.2s;
     }
-    .btn-primary { background: var(--primary); color: white; width: 100%; justify-content: center; }
-    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
-    .btn-outline:hover { background: var(--bg-body); border-color: var(--primary); color: var(--primary); }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .btn-outline:hover {
+      background: var(--bg-body);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
 
     /* Table Styles */
-    table { width: 100%; border-collapse: collapse; }
-    th { text-align: left; padding: 1rem; background: #f8fafc; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; }
-    td { padding: 1rem; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
-    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      text-align: left;
+      padding: 1rem;
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+
     .status-badge {
-      padding: 4px 8px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
     }
-    .status-active { background: #dcfce7; color: #166534; }
-    .status-inactive { background: #fee2e2; color: #991b1b; }
 
-    .action-group { display: flex; gap: 4px; }
+    .status-active {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-inactive {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .action-group {
+      display: flex;
+      gap: 4px;
+    }
+
     .icon-btn {
-      padding: 6px; border-radius: 4px; border: 1px solid var(--border); background: white; cursor: pointer; color: var(--text-muted);
+      padding: 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: white;
+      cursor: pointer;
+      color: var(--text-muted);
     }
-    .icon-btn:hover { color: var(--primary); border-color: var(--primary); }
 
-    @media (max-width: 1200px) { .dashboard-layout { grid-template-columns: 1fr; } }
+    .icon-btn:hover {
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+
+    @media (max-width: 1200px) {
+      .dashboard-layout {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
+
 <body>
 
   <!-- SIDEBAR -->
@@ -216,7 +331,7 @@
     </header>
 
     <div class="content-padding">
-      
+
       <!-- STATS OVERVIEW -->
       <div class="stats-grid">
         <div class="stat-card">
@@ -234,7 +349,8 @@
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background: #fff7ed; color: #f97316;"><i class="fas fa-exclamation-triangle"></i></div>
+          <div class="stat-icon" style="background: #fff7ed; color: #f97316;"><i
+              class="fas fa-exclamation-triangle"></i></div>
           <div>
             <label>Inactive Alerts</label>
             <h2 style="margin:0">3</h2>
@@ -243,7 +359,7 @@
       </div>
 
       <div class="dashboard-layout">
-        
+
         <!-- REGISTRATION COLUMN -->
         <section class="card">
           <div class="card-header">
@@ -303,20 +419,20 @@
           <div class="card-header">
             <h2><i class="fas fa-list"></i> Facility Directory</h2>
             <button id="fetchHospitals" class="btn btn-outline" style="padding: 4px 12px; font-size: 0.75rem;">
-               <i class="fas fa-sync"></i> Refresh
+              <i class="fas fa-sync"></i> Refresh
             </button>
           </div>
-          
+
           <div id="hospitalLoader" style="display: none; padding: 2rem; text-align: center;">
-             <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary)"></i>
-             <p>Syncing Database...</p>
+            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary)"></i>
+            <p>Syncing Database...</p>
           </div>
 
           <div class="table-container" id="hospitalTable">
-             <div style="padding: 3rem; text-align: center; color: var(--text-muted)">
-                <i class="fas fa-database" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
-                <p>Click Refresh to load system data</p>
-             </div>
+            <div style="padding: 3rem; text-align: center; color: var(--text-muted)">
+              <i class="fas fa-database" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+              <p>Click Refresh to load system data</p>
+            </div>
           </div>
         </section>
 
@@ -380,18 +496,19 @@
 
     // Connect existing logic (fetchHospitals listener) to renderHospitals function
     document.getElementById("fetchHospitals").addEventListener("click", async () => {
-        hospitalLoader.style.display = "block";
-        hospitalTable.innerHTML = "";
-        try {
-            const response = await fetch(`${BASE_URL}/get-hospitals`);
-            const result = await response.json();
-            renderHospitals(result.hospitals);
-        } catch (err) {
-            hospitalTable.innerHTML = `<p style="color:var(--error); padding:2rem;">Connection Error</p>`;
-        } finally {
-            hospitalLoader.style.display = "none";
-        }
+      hospitalLoader.style.display = "block";
+      hospitalTable.innerHTML = "";
+      try {
+        const response = await fetch(`${BASE_URL}/get-hospitals`);
+        const result = await response.json();
+        renderHospitals(result.hospitals);
+      } catch (err) {
+        hospitalTable.innerHTML = `<p style="color:var(--error); padding:2rem;">Connection Error</p>`;
+      } finally {
+        hospitalLoader.style.display = "none";
+      }
     });
   </script>
 </body>
+
 </html>

@@ -1,508 +1,494 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Portal | Hospital System</title>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
-    <style>
-      :root {
-        --sidebar-width: 260px;
-        --primary: #2563eb;
-        --primary-dark: #1d4ed8;
-        --bg-body: #f1f5f9;
-        --bg-card: #ffffff;
-        --text-main: #0f172a;
-        --text-muted: #64748b;
-        --border: #e2e8f0;
-        --success: #10b981;
-        --error: #ef4444;
-        --warning: #f59e0b;
-        --indigo: #6366f1;
-      }
 
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        font-family: "Inter", system-ui, sans-serif;
-        margin: 0;
-        display: flex;
-        height: 100vh;
-        background: var(--bg-body);
-        color: var(--text-main);
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Portal | Hospital System</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    :root {
+      --sidebar-width: 260px;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --bg-body: #f1f5f9;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --error: #ef4444;
+      --warning: #f59e0b;
+      --indigo: #6366f1;
+    }
 
-      /* Sidebar Navigation */
-      .sidebar {
-        width: var(--sidebar-width);
-        background: #1e293b;
-        color: white;
-        display: flex;
-        flex-direction: column;
-        flex-shrink: 0;
-      }
+    * {
+      box-sizing: border-box;
+    }
 
-      .sidebar-header {
-        padding: 2rem 1.5rem;
-        font-size: 1.25rem;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        border-bottom: 1px solid #334155;
-      }
+    body {
+      font-family: "Inter", system-ui, sans-serif;
+      margin: 0;
+      display: flex;
+      height: 100vh;
+      background: var(--bg-body);
+      color: var(--text-main);
+    }
 
-      .nav-links {
-        flex-grow: 1;
-        padding: 1rem;
-        list-style: none;
-        margin: 0;
-      }
+    /* Sidebar Navigation */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: #1e293b;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
 
-      .nav-item {
-        padding: 0.75rem 1rem;
-        border-radius: 8px;
-        margin-bottom: 0.5rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        color: #94a3b8;
-        transition: 0.2s;
-      }
+    .sidebar-header {
+      padding: 2rem 1.5rem;
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #334155;
+    }
 
-      .nav-item.active {
-        background: var(--primary);
-        color: white;
-      }
-      .nav-item:hover:not(.active) {
-        background: #334155;
-        color: white;
-      }
+    .nav-links {
+      flex-grow: 1;
+      padding: 1rem;
+      list-style: none;
+      margin: 0;
+    }
 
-      /* Main View Area */
-      .main-wrapper {
-        flex-grow: 1;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-      }
+    .nav-item {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #94a3b8;
+      transition: 0.2s;
+    }
 
-      header.top-bar {
-        background: var(--bg-card);
-        padding: 1rem 2rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid var(--border);
-        position: sticky;
-        top: 0;
-        z-index: 10;
-      }
+    .nav-item.active {
+      background: var(--primary);
+      color: white;
+    }
 
-      .content-padding {
-        padding: 2rem;
-        max-width: 1400px;
-        margin: 0 auto;
-        width: 100%;
-      }
+    .nav-item:hover:not(.active) {
+      background: #334155;
+      color: white;
+    }
 
-      /* Stats Grid */
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-      }
+    /* Main View Area */
+    .main-wrapper {
+      flex-grow: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
 
-      .stat-card {
-        background: var(--bg-card);
-        padding: 1.5rem;
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-      }
+    header.top-bar {
+      background: var(--bg-card);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
 
-      .stat-icon {
-        height: 48px;
-        width: 48px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.25rem;
-      }
+    .content-padding {
+      padding: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
 
-      /* Layout */
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .stat-icon {
+      height: 48px;
+      width: 48px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    /* Layout */
+    .dashboard-layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-header h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    /* Form & Tables */
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      transition: 0.2s;
+    }
+
+    .btn {
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      transition: 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      text-align: left;
+      padding: 1rem;
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .status-active {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-inactive {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    /* Action Buttons (The Emojis/Icons you asked for) */
+    .action-group {
+      display: flex;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: white;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .icon-btn.email {
+      color: var(--primary);
+    }
+
+    .icon-btn.disable {
+      color: var(--warning);
+    }
+
+    .icon-btn.revoke {
+      color: var(--indigo);
+    }
+
+    .icon-btn.delete {
+      color: var(--error);
+    }
+
+    .icon-btn:hover {
+      background: #f8fafc;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .message {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      display: none;
+      text-align: center;
+    }
+
+    @media (max-width: 1200px) {
       .dashboard-layout {
-        display: grid;
-        grid-template-columns: 380px 1fr;
-        gap: 2rem;
-        align-items: start;
+        grid-template-columns: 1fr;
       }
+    }
+  </style>
+</head>
 
-      .card {
-        background: var(--bg-card);
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        overflow: hidden;
-      }
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <i class="fas fa-hospital-user" style="color: var(--primary)"></i>
+      <span>MediAdmin</span>
+    </div>
+    <ul class="nav-links">
+      <li class="nav-item active">
+        <i class="fas fa-th-large"></i> Dashboard
+      </li>
+      <li class="nav-item">
+        <i class="fas fa-building-medical"></i> All Facilities
+      </li>
+      <li class="nav-item"><i class="fas fa-user-shield"></i> User Roles</li>
+      <li class="nav-item"><i class="fas fa-cog"></i> System Settings</li>
+    </ul>
+  </aside>
 
-      .card-header {
-        padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .card-header h2 {
-        margin: 0;
-        font-size: 1.1rem;
-      }
-
-      /* Form & Tables */
-      .form-group {
-        margin-bottom: 1rem;
-      }
-      label {
-        display: block;
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: var(--text-muted);
-        margin-bottom: 0.4rem;
-      }
-      input {
-        width: 100%;
-        padding: 0.65rem;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        font-size: 0.9rem;
-        transition: 0.2s;
-      }
-
-      .btn {
-        padding: 0.6rem 1.2rem;
-        border-radius: 6px;
-        border: none;
-        font-weight: 600;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.85rem;
-        transition: 0.2s;
-      }
-      .btn-primary {
-        background: var(--primary);
-        color: white;
-        width: 100%;
-        justify-content: center;
-      }
-      .btn-outline {
-        background: transparent;
-        border: 1px solid var(--border);
-        color: var(--text-muted);
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-      th {
-        text-align: left;
-        padding: 1rem;
-        background: #f8fafc;
-        color: var(--text-muted);
-        font-size: 0.75rem;
-        text-transform: uppercase;
-      }
-      td {
-        padding: 1rem;
-        border-bottom: 1px solid var(--border);
-        font-size: 0.85rem;
-      }
-
-      .status-badge {
-        padding: 4px 8px;
-        border-radius: 20px;
-        font-size: 0.7rem;
-        font-weight: 700;
-        text-transform: uppercase;
-      }
-      .status-active {
-        background: #dcfce7;
-        color: #166534;
-      }
-      .status-inactive {
-        background: #fee2e2;
-        color: #991b1b;
-      }
-
-      /* Action Buttons (The Emojis/Icons you asked for) */
-      .action-group {
-        display: flex;
-        gap: 6px;
-      }
-      .icon-btn {
-        padding: 8px;
-        border-radius: 6px;
-        border: 1px solid var(--border);
-        background: white;
-        cursor: pointer;
-        transition: 0.2s;
-      }
-      .icon-btn.email {
-        color: var(--primary);
-      }
-      .icon-btn.disable {
-        color: var(--warning);
-      }
-      .icon-btn.revoke {
-        color: var(--indigo);
-      }
-      .icon-btn.delete {
-        color: var(--error);
-      }
-      .icon-btn:hover {
-        background: #f8fafc;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-      }
-
-      .message {
-        margin-top: 1rem;
-        padding: 0.75rem;
-        border-radius: 6px;
-        font-size: 0.85rem;
-        display: none;
-        text-align: center;
-      }
-
-      @media (max-width: 1200px) {
-        .dashboard-layout {
-          grid-template-columns: 1fr;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <i class="fas fa-hospital-user" style="color: var(--primary)"></i>
-        <span>MediAdmin</span>
+  <div class="main-wrapper">
+    <header class="top-bar">
+      <div>
+        <h3 style="margin: 0; font-size: 1.2rem">Hospital Admin Console</h3>
+        <small style="color: var(--text-muted)">Welcome, Super Admin</small>
       </div>
-      <ul class="nav-links">
-        <li class="nav-item active">
-          <i class="fas fa-th-large"></i> Dashboard
-        </li>
-        <li class="nav-item">
-          <i class="fas fa-building-medical"></i> All Facilities
-        </li>
-        <li class="nav-item"><i class="fas fa-user-shield"></i> User Roles</li>
-        <li class="nav-item"><i class="fas fa-cog"></i> System Settings</li>
-      </ul>
-    </aside>
+      <div style="display: flex; gap: 1rem">
+        <button class="btn btn-outline" id="runActivityCheck">
+          <i class="fas fa-search-nodes"></i> Activity Check
+        </button>
+      </div>
+    </header>
 
-    <div class="main-wrapper">
-      <header class="top-bar">
-        <div>
-          <h3 style="margin: 0; font-size: 1.2rem">Hospital Admin Console</h3>
-          <small style="color: var(--text-muted)">Welcome, Super Admin</small>
-        </div>
-        <div style="display: flex; gap: 1rem">
-          <button class="btn btn-outline" id="runActivityCheck">
-            <i class="fas fa-search-nodes"></i> Activity Check
-          </button>
-        </div>
-      </header>
-
-      <div class="content-padding">
-        <!-- STATS -->
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #eff6ff; color: #3b82f6">
-              <i class="fas fa-users"></i>
-            </div>
-            <div>
-              <label>Total Staff</label>
-              <h2 id="statTotalStaff">--</h2>
-            </div>
+    <div class="content-padding">
+      <!-- STATS -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #eff6ff; color: #3b82f6">
+            <i class="fas fa-users"></i>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #f0fdf4; color: #22c55e">
-              <i class="fas fa-hospital"></i>
-            </div>
-            <div>
-              <label>Active Facilities</label>
-              <h2 id="statActive">--</h2>
-            </div>
+          <div>
+            <label>Total Staff</label>
+            <h2 id="statTotalStaff">--</h2>
           </div>
         </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #f0fdf4; color: #22c55e">
+            <i class="fas fa-hospital"></i>
+          </div>
+          <div>
+            <label>Active Facilities</label>
+            <h2 id="statActive">--</h2>
+          </div>
+        </div>
+      </div>
 
-        <div class="dashboard-layout">
-          <!-- REGISTRATION FORM -->
-          <section class="card">
-            <div class="card-header">
-              <h2><i class="fas fa-plus-circle"></i> Register Facility</h2>
-            </div>
-            <div class="card-body">
-              <form id="hospitalForm">
-                <div class="form-group">
-                  <label>Hospital Name</label>
-                  <input type="text" name="h_name" required />
-                </div>
-                <div class="form-group">
-                  <label>Address</label>
-                  <input type="text" name="addresse" required />
-                </div>
-                <div
-                  style="
+      <div class="dashboard-layout">
+        <!-- REGISTRATION FORM -->
+        <section class="card">
+          <div class="card-header">
+            <h2><i class="fas fa-plus-circle"></i> Register Facility</h2>
+          </div>
+          <div class="card-body">
+            <form id="hospitalForm">
+              <div class="form-group">
+                <label>Hospital Name</label>
+                <input type="text" name="h_name" required />
+              </div>
+              <div class="form-group">
+                <label>Address</label>
+                <input type="text" name="addresse" required />
+              </div>
+              <div style="
                     display: grid;
                     grid-template-columns: 1fr 1fr;
                     gap: 10px;
-                  "
-                >
-                  <div class="form-group">
-                    <label>Phone</label
-                    ><input type="text" name="h_phone" required />
-                  </div>
-                  <div class="form-group">
-                    <label>Email</label
-                    ><input type="email" name="h_email" required />
-                  </div>
+                  ">
+                <div class="form-group">
+                  <label>Phone</label><input type="text" name="h_phone" required />
                 </div>
-                <hr
-                  style="
+                <div class="form-group">
+                  <label>Email</label><input type="email" name="h_email" required />
+                </div>
+              </div>
+              <hr style="
                     border: 0;
                     border-top: 1px solid var(--border);
                     margin: 1.5rem 0;
-                  "
-                />
-                <div class="form-group">
-                  <label>Rep Name</label
-                  ><input type="text" name="r_name" required />
-                </div>
-                <div class="form-group">
-                  <label>Rep phone</label
-                  ><input type="number" name="r_phone" required />
-                </div>
-                <div class="form-group">
-                  <label>Rep Email</label
-                  ><input type="email" name="r_email" required />
-                </div>
-                <div
-                  style="
+                  " />
+              <div class="form-group">
+                <label>Rep Name</label><input type="text" name="r_name" required />
+              </div>
+              <div class="form-group">
+                <label>Rep phone</label><input type="number" name="r_phone" required />
+              </div>
+              <div class="form-group">
+                <label>Rep Email</label><input type="email" name="r_email" required />
+              </div>
+              <div style="
                     display: grid;
                     grid-template-columns: 1fr 1fr;
                     gap: 10px;
-                  "
-                >
-                  <div class="form-group">
-                    <label>Password</label
-                    ><input type="password" name="r_password" required />
-                  </div>
-                  <div class="form-group">
-                    <label>Confirm</label
-                    ><input
-                      type="password"
-                      name="r_confirm_password"
-                      required
-                    />
-                  </div>
+                  ">
+                <div class="form-group">
+                  <label>Password</label><input type="password" name="r_password" required />
                 </div>
-                <button type="submit" class="btn btn-primary">
-                  Complete Registration
-                </button>
-                <div id="message" class="message"></div>
-              </form>
-            </div>
-          </section>
-
-          <!-- DATA TABLE -->
-          <section class="card">
-            <div class="card-header">
-              <h2><i class="fas fa-list"></i> Directory</h2>
-              <button
-                id="fetchHospitals"
-                class="btn btn-outline"
-                style="padding: 4px 10px"
-              >
-                <i class="fas fa-sync"></i>
+                <div class="form-group">
+                  <label>Confirm</label><input type="password" name="r_confirm_password" required />
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary">
+                Complete Registration
               </button>
-            </div>
-            <div
-              id="hospitalLoader"
-              style="display: none; text-align: center; padding: 2rem"
-            >
-              <i
-                class="fas fa-circle-notch fa-spin fa-2x"
-                style="color: var(--primary)"
-              ></i>
-            </div>
-            <div id="hospitalTable" class="table-container">
-              <p
-                style="
+              <div id="message" class="message"></div>
+            </form>
+          </div>
+        </section>
+
+        <!-- DATA TABLE -->
+        <section class="card">
+          <div class="card-header">
+            <h2><i class="fas fa-list"></i> Directory</h2>
+            <button id="fetchHospitals" class="btn btn-outline" style="padding: 4px 10px">
+              <i class="fas fa-sync"></i>
+            </button>
+          </div>
+          <div id="hospitalLoader" style="display: none; text-align: center; padding: 2rem">
+            <i class="fas fa-circle-notch fa-spin fa-2x" style="color: var(--primary)"></i>
+          </div>
+          <div id="hospitalTable" class="table-container">
+            <p style="
                   text-align: center;
                   padding: 2rem;
                   color: var(--text-muted);
-                "
-              >
-                Fetch data to begin.
-              </p>
-            </div>
-          </section>
-        </div>
+                ">
+              Fetch data to begin.
+            </p>
+          </div>
+        </section>
       </div>
     </div>
+  </div>
 
-    <script>
-      const BASE_URL = "http://127.0.0.1:4444/api";
+  <script>
+    const BASE_URL = "http://127.0.0.1:4444/api";
 
-      // 1. Load Stats
-      async function loadStats() {
+    // 1. Load Stats
+    async function loadStats() {
+      try {
+        const res = await fetch(`${BASE_URL}/total-staff`);
+        const data = await res.json();
+        document.getElementById("statTotalStaff").textContent =
+          data.totalStaff || 0;
+      } catch (e) { }
+    }
+
+    // 2. Fetch & Render Table
+    document
+      .getElementById("fetchHospitals")
+      .addEventListener("click", async () => {
+        const loader = document.getElementById("hospitalLoader");
+        const tableDiv = document.getElementById("hospitalTable");
+
+        loader.style.display = "block";
+        tableDiv.innerHTML = "";
+
         try {
-          const res = await fetch(`${BASE_URL}/total-staff`);
+          const res = await fetch(`${BASE_URL}/get-hospitals`);
           const data = await res.json();
-          document.getElementById("statTotalStaff").textContent =
-            data.totalStaff || 0;
-        } catch (e) {}
-      }
 
-      // 2. Fetch & Render Table
-      document
-        .getElementById("fetchHospitals")
-        .addEventListener("click", async () => {
-          const loader = document.getElementById("hospitalLoader");
-          const tableDiv = document.getElementById("hospitalTable");
+          if (!data.hospitals || data.hospitals.length === 0) {
+            tableDiv.innerHTML = `<p style="padding:2rem; text-align:center;">No data found.</p>`;
+            return;
+          }
 
-          loader.style.display = "block";
-          tableDiv.innerHTML = "";
+          let html = `<table><thead><tr><th>Facility</th><th>Status</th><th>Rep</th><th>Actions</th></tr></thead><tbody>`;
 
-          try {
-            const res = await fetch(`${BASE_URL}/get-hospitals`);
-            const data = await res.json();
-
-            if (!data.hospitals || data.hospitals.length === 0) {
-              tableDiv.innerHTML = `<p style="padding:2rem; text-align:center;">No data found.</p>`;
-              return;
-            }
-
-            let html = `<table><thead><tr><th>Facility</th><th>Status</th><th>Rep</th><th>Actions</th></tr></thead><tbody>`;
-
-            data.hospitals.forEach((h) => {
-              console.log(h.active);
-              const statusClass = h.active
-                ? "status-active"
-                : "status-inactive";
-              html += `
+          data.hospitals.forEach((h) => {
+            console.log(h.active);
+            const statusClass = h.active
+              ? "status-active"
+              : "status-inactive";
+            html += `
                 <tr>
                     <td><strong>${h.hospitalDetails.name}</strong><br><small>${h.hospitalDetails.code}</small></td>
                     <td><span class="status-badge ${statusClass}">${h.active ? "Active" : "Inactie"}</span></td>
@@ -516,97 +502,98 @@
                         </div>
                     </td>
                 </tr>`;
-            });
-            tableDiv.innerHTML = html + `</tbody></table>`;
-          } catch (err) {
-            tableDiv.innerHTML = `<p style="color:var(--error); padding:2rem;">Server Error</p>`;
-          } finally {
-            loader.style.display = "none";
-          }
-        });
+          });
+          tableDiv.innerHTML = html + `</tbody></table>`;
+        } catch (err) {
+          tableDiv.innerHTML = `<p style="color:var(--error); padding:2rem;">Server Error</p>`;
+        } finally {
+          loader.style.display = "none";
+        }
+      });
 
-      // 3. Handle Actions (Mapped to your specific routes)
-      document
-        .getElementById("hospitalTable")
-        .addEventListener("click", async (e) => {
-          const btn = e.target.closest(".action-btn");
-          if (!btn) return;
+    // 3. Handle Actions (Mapped to your specific routes)
+    document
+      .getElementById("hospitalTable")
+      .addEventListener("click", async (e) => {
+        const btn = e.target.closest(".action-btn");
+        if (!btn) return;
 
-          const id = btn.dataset.id;
-          const type = btn.classList[2]; // email, disable, revoke, delete
-          let endpoint = "";
-          let method = "POST";
+        const id = btn.dataset.id;
+        const type = btn.classList[2]; // email, disable, revoke, delete
+        let endpoint = "";
+        let method = "POST";
 
-          // Route mapping based on your request
-          switch (type) {
-            case "email":
-              endpoint = `/send-hospital-details/${id}`;
-              method = "GET";
-              break;
-            case "disable":
-              endpoint = `/disable-hospital/${id}`;
-              method = "PATCH";
-              break;
-            case "revoke":
-              endpoint = `/revoke-access/${id}`;
-              method = "PATCH";
-              break;
-            case "delete":
-              endpoint = `/delete-hospital/${id}`;
-              method = "DELETE";
-              break;
-          }
+        // Route mapping based on your request
+        switch (type) {
+          case "email":
+            endpoint = `/send-hospital-details/${id}`;
+            method = "GET";
+            break;
+          case "disable":
+            endpoint = `/disable-hospital/${id}`;
+            method = "PATCH";
+            break;
+          case "revoke":
+            endpoint = `/revoke-access/${id}`;
+            method = "PATCH";
+            break;
+          case "delete":
+            endpoint = `/delete-hospital/${id}`;
+            method = "DELETE";
+            break;
+        }
 
-          if (
-            type === "delete" &&
-            !confirm("Are you sure? This cannot be undone.")
-          )
-            return;
+        if (
+          type === "delete" &&
+          !confirm("Are you sure? This cannot be undone.")
+        )
+          return;
 
-          btn.innerHTML = "⏳";
-          try {
-            const res = await fetch(`${BASE_URL}${endpoint}`, { method });
-            const data = await res.json();
-            alert(data.message || "Action Successful");
+        btn.innerHTML = "⏳";
+        try {
+          const res = await fetch(`${BASE_URL}${endpoint}`, { method });
+          const data = await res.json();
+          alert(data.message || "Action Successful");
+          document.getElementById("fetchHospitals").click();
+        } catch (err) {
+          alert("Connection error occurred.");
+        }
+      });
+
+    // 4. Registration
+    document
+      .getElementById("hospitalForm")
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const msg = document.getElementById("message");
+        const formData = Object.fromEntries(new FormData(e.target).entries());
+
+        msg.style.display = "block";
+        msg.textContent = "Processing...";
+        msg.style.background = "#eff6ff";
+
+        try {
+          const res = await fetch(`${BASE_URL}/register-hospital`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formData),
+          });
+          if (res.ok) {
+            msg.textContent = "Facility Provisioned! 🏥";
+            msg.style.background = "#dcfce7";
+            e.target.reset();
             document.getElementById("fetchHospitals").click();
-          } catch (err) {
-            alert("Connection error occurred.");
+          } else {
+            msg.textContent = "Registration Failed.";
+            msg.style.background = "#fee2e2";
           }
-        });
+        } catch (err) {
+          msg.textContent = "Check server connection.";
+        }
+      });
 
-      // 4. Registration
-      document
-        .getElementById("hospitalForm")
-        .addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const msg = document.getElementById("message");
-          const formData = Object.fromEntries(new FormData(e.target).entries());
+    // Initial Load
+  </script>
+</body>
 
-          msg.style.display = "block";
-          msg.textContent = "Processing...";
-          msg.style.background = "#eff6ff";
-
-          try {
-            const res = await fetch(`${BASE_URL}/register-hospital`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(formData),
-            });
-            if (res.ok) {
-              msg.textContent = "Facility Provisioned! 🏥";
-              msg.style.background = "#dcfce7";
-              e.target.reset();
-              document.getElementById("fetchHospitals").click();
-            } else {
-              msg.textContent = "Registration Failed.";
-              msg.style.background = "#fee2e2";
-            }
-          } catch (err) {
-            msg.textContent = "Check server connection.";
-          }
-        });
-
-      // Initial Load
-    </script>
-  </body>
 </html>
