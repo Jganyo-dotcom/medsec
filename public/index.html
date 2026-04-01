@@ -1,271 +1,265 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hospital Login | Secure Access</title>
-    <style>
-      :root {
-        --primary: #2563eb;
-        --primary-hover: #1d4ed8;
-        --bg: #f1f5f9;
-        --card-bg: #ffffff;
-        --text-main: #1e293b;
-        --text-muted: #64748b;
-        --border: #e2e8f0;
-        --error: #ef4444;
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hospital Login | Secure Access</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --error: #ef4444;
+    }
+
+    body {
+      font-family:
+        "Inter",
+        -apple-system,
+        sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .login-card {
+      background: var(--card-bg);
+      width: 100%;
+      max-width: 400px;
+      padding: 2.5rem;
+      border-radius: 16px;
+      box-shadow:
+        0 10px 25px -5px rgba(0, 0, 0, 0.1),
+        0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--border);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .header h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.025em;
+    }
+
+    .header p {
+      margin: 0.5rem 0 0;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      box-sizing: border-box;
+      transition: all 0.2s;
+      background-color: #f8fafc;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background-color: #fff;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    }
+
+    button {
+      width: 100%;
+      padding: 0.8rem;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition:
+        background-color 0.2s,
+        transform 0.1s;
+      margin-top: 1rem;
+    }
+
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .footer-links {
+      margin-top: 1.5rem;
+      text-align: center;
+      font-size: 0.875rem;
+    }
+
+    .footer-links a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
+
+    #errorMessage {
+      background-color: #fef2f2;
+      color: var(--error);
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+      display: none;
+      border: 1px solid #fee2e2;
+      text-align: center;
+    }
+
+    /* Loader Spin Animation */
+    .loader {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid white;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
       }
 
-      body {
-        font-family:
-          "Inter",
-          -apple-system,
-          sans-serif;
-        background-color: var(--bg);
-        color: var(--text-main);
-        margin: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
+      100% {
+        transform: rotate(360deg);
       }
+    }
+  </style>
+</head>
 
-      .login-card {
-        background: var(--card-bg);
-        width: 100%;
-        max-width: 400px;
-        padding: 2.5rem;
-        border-radius: 16px;
-        box-shadow:
-          0 10px 25px -5px rgba(0, 0, 0, 0.1),
-          0 8px 10px -6px rgba(0, 0, 0, 0.1);
-        border: 1px solid var(--border);
-      }
-
-      .header {
-        text-align: center;
-        margin-bottom: 2rem;
-      }
-
-      .header h2 {
-        margin: 0;
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--text-main);
-        letter-spacing: -0.025em;
-      }
-
-      .header p {
-        margin: 0.5rem 0 0;
-        color: var(--text-muted);
-        font-size: 0.875rem;
-      }
-
-      .form-group {
-        margin-bottom: 1.25rem;
-      }
-
-      label {
-        display: block;
-        font-size: 0.875rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-      }
-
-      input {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        font-size: 1rem;
-        box-sizing: border-box;
-        transition: all 0.2s;
-        background-color: #f8fafc;
-      }
-
-      input:focus {
-        outline: none;
-        border-color: var(--primary);
-        background-color: #fff;
-        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-      }
-
-      button {
-        width: 100%;
-        padding: 0.8rem;
-        background-color: var(--primary);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition:
-          background-color 0.2s,
-          transform 0.1s;
-        margin-top: 1rem;
-      }
-
-      button:hover {
-        background-color: var(--primary-hover);
-      }
-
-      button:active {
-        transform: scale(0.98);
-      }
-
-      button:disabled {
-        opacity: 0.7;
-        cursor: not-allowed;
-      }
-
-      .footer-links {
-        margin-top: 1.5rem;
-        text-align: center;
-        font-size: 0.875rem;
-      }
-
-      .footer-links a {
-        color: var(--primary);
-        text-decoration: none;
-        font-weight: 500;
-      }
-
-      .footer-links a:hover {
-        text-decoration: underline;
-      }
-
-      #errorMessage {
-        background-color: #fef2f2;
-        color: var(--error);
-        padding: 0.75rem;
-        border-radius: 6px;
-        font-size: 0.875rem;
-        margin-bottom: 1.5rem;
-        display: none;
-        border: 1px solid #fee2e2;
-        text-align: center;
-      }
-
-      /* Loader Spin Animation */
-      .loader {
-        border: 2px solid #f3f3f3;
-        border-top: 2px solid white;
-        border-radius: 50%;
-        width: 16px;
-        height: 16px;
-        animation: spin 0.8s linear infinite;
-        display: inline-block;
-        margin-right: 8px;
-        vertical-align: middle;
-      }
-
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="login-card">
-      <div class="header">
-        <h2>Hospital Portal</h2>
-        <p>Enter your credentials to manage staff</p>
-      </div>
-
-      <div id="errorMessage"></div>
-
-      <form id="loginForm">
-        <div class="form-group">
-          <label for="identifier">Hospital Code or Email</label>
-          <input
-            type="text"
-            id="identifier"
-            placeholder="HOSP-123 or admin@hospital.com"
-            required
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            placeholder="••••••••"
-            required
-          />
-        </div>
-
-        <button type="submit" id="loginBtn">Login to Dashboard</button>
-      </form>
-
-      <div class="footer-links">
-        <a href="#">Forgot password?</a>
-        <p style="margin-top: 1rem; color: var(--text-muted)">
-          Back to <a href="/">Main Portal</a>
-        </p>
-      </div>
+<body>
+  <div class="login-card">
+    <div class="header">
+      <h2>Hospital Portal</h2>
+      <p>Enter your credentials to manage staff</p>
     </div>
 
-    <script>
-      const BASE_URL = "http://127.0.0.1:4444/api";
-      const loginForm = document.getElementById("loginForm");
-      const loginBtn = document.getElementById("loginBtn");
-      const errorMessage = document.getElementById("errorMessage");
+    <div id="errorMessage"></div>
 
-      loginForm.addEventListener("submit", async function (e) {
-        e.preventDefault();
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="identifier">Hospital Code or Email</label>
+        <input type="text" id="identifier" placeholder="HOSP-123 or admin@hospital.com" required />
+      </div>
 
-        // UI Feedback
-        loginBtn.disabled = true;
-        loginBtn.innerHTML = '<span class="loader"></span> Authenticating...';
-        errorMessage.style.display = "none";
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="••••••••" required />
+      </div>
 
-        const identifier = document.getElementById("identifier").value;
-        const password = document.getElementById("password").value;
+      <button type="submit" id="loginBtn">Login to Dashboard</button>
+    </form>
 
-        try {
-          const res = await fetch(`${BASE_URL}/login-hospital`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ identifier, password }),
-          });
+    <div class="footer-links">
+      <a href="#">Forgot password?</a>
+      <p style="margin-top: 1rem; color: var(--text-muted)">
+        Back to <a href="/">Main Portal</a>
+      </p>
+    </div>
+  </div>
 
-          const data = await res.json();
-          console.log(data)
+  <script>
+    const BASE_URL = "http://127.0.0.1:4444/api";
+    const loginForm = document.getElementById("loginForm");
+    const loginBtn = document.getElementById("loginBtn");
+    const errorMessage = document.getElementById("errorMessage");
 
-          if (res.ok && data.hospital.isVerified === false) {
-            // Success: Redirect to OTP verification
-            window.location.href = `/verify.html?hospitalId=${data.hospital.id}`;
-          } else if (res.ok && data.hospital.isVerified === true) {
-            localStorage.setItem("token", data.token);
-            localStorage.setItem("hospitalName", data.hospital.name);
-            localStorage.setItem("hospitalCode", data.hospital.code);
-            localStorage.setItem("hospitalId", data.hospital.id);
+    loginForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
 
-            // Redirect with just the ID in the query string
-            window.location.href = `/IT.html?hospitalId=${data.hospital.id}`;
-          } else {
-            // Failure: Show error message
-            errorMessage.textContent =
-              data.message || "Invalid credentials. Please try again.";
-            errorMessage.style.display = "block";
-            loginBtn.disabled = false;
-            loginBtn.innerHTML = "Login to Dashboard";
-          }
-        } catch (err) {
-          console.log(err)
+      // UI Feedback
+      loginBtn.disabled = true;
+      loginBtn.innerHTML = '<span class="loader"></span> Authenticating...';
+      errorMessage.style.display = "none";
+
+      const identifier = document.getElementById("identifier").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        const res = await fetch(`${BASE_URL}/login-hospital`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier, password }),
+        });
+
+        const data = await res.json();
+        console.log(data)
+
+        if (res.ok && data.hospital.isVerified === false) {
+          // Success: Redirect to OTP verification
+          window.location.href = `/verify.html?hospitalId=${data.hospital.id}`;
+        } else if (res.ok && data.hospital.isVerified === true) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("hospitalName", data.hospital.name);
+          localStorage.setItem("hospitalCode", data.hospital.code);
+          localStorage.setItem("hospitalId", data.hospital.id);
+
+          // Redirect with just the ID in the query string
+          window.location.href = `/IT.html?hospitalId=${data.hospital.id}`;
+        } else {
+          // Failure: Show error message
           errorMessage.textContent =
-            "Network error. Please check your connection.";
+            data.message || "Invalid credentials. Please try again.";
           errorMessage.style.display = "block";
           loginBtn.disabled = false;
           loginBtn.innerHTML = "Login to Dashboard";
         }
-      });
-    </script>
-  </body>
+      } catch (err) {
+        console.log(err)
+        errorMessage.textContent =
+          "Network error. Please check your connection.";
+        errorMessage.style.display = "block";
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = "Login to Dashboard";
+      }
+    });
+  </script>
+</body>
+
 </html>

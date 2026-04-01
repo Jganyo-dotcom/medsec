@@ -10,16 +10,28 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "run this is thunderclient or others http://127.0.0.1:4444/api/get-hospitals  to get all hospitals",
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
     "bcrypt": "^6.0.0",
+    "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "joi": "^18.0.2",
+    "joi": "^18.1.2",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.3.0",
+    "mongoose": "^9.3.3",
     "morgan": "^1.10.1",
-    "nodemailer": "^8.0.3",
+    "nodemailer": "^8.0.4",
     "resend": "^6.9.4"
-  }
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jganyo-dotcom/medsec.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Jganyo-dotcom/medsec/issues"
+  },
+  "homepage": "https://github.com/Jganyo-dotcom/medsec#readme"
 }
