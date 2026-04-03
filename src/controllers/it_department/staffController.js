@@ -45,8 +45,8 @@ const registerStaff = async (req, res) => {
         id: newStaff._id,
         name: newStaff.staffAccounts.name,
         email: newStaff.staffAccounts.email,
-        role: newStaff.staffAccounts.role,
-        HospitalCode: req.user.hospitalCode,// this is it also go through your code and make sure that it matches the new schema 
+        role: value.role,
+        HospitalCode: req.user.hospitalCode, // this is it also go through your code and make sure that it matches the new schema
         department: newStaff.staffAccounts.department,
         isActive: newStaff.staffAccounts.isActive,
       },
