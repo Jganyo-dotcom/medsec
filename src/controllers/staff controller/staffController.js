@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const Staff = require("../../models/staff.model");
 const {
   addStaffSchema,
@@ -6,8 +7,8 @@ const {
   resetPasswordSchema,
 } = require("../../validations/staffValidation/staff.validation");
 
-// Add a new staff member
-const addStaff = async (req, res) => {
+// Register a new staff member
+const registerStaff = async (req, res) => {
   try {
     const { error, value } = addStaffSchema.validate(req.body);
     if (error) {
@@ -52,7 +53,7 @@ const addStaff = async (req, res) => {
 };
 
 // Edit an existing staff member
-const editStaff = async (req, res) => {
+const editStaffById = async (req, res) => {
   try {
     const { id } = req.params;
     const { error, value } = editStaffSchema.validate(req.body);
@@ -103,8 +104,8 @@ const editStaff = async (req, res) => {
   }
 };
 
-// Deactivate or toggle active status of a staff member
-const deactivateStaff = async (req, res) => {
+// Disable or toggle active status of a staff member
+const disableStaff = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -127,7 +128,7 @@ const deactivateStaff = async (req, res) => {
 };
 
 // Reset a staff member's password
-const resetPassword = async (req, res) => {
+const resetStaffPassword = async (req, res) => {
   try {
     const { id } = req.params;
     const { error, value } = resetPasswordSchema.validate(req.body);
@@ -155,9 +156,135 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// Get all staff
+const getAllStaff = async (req, res) => {
+  try {
+    const staff = await Staff.find();
+    if (!staff || staff.length === 0) {
+      return res.status(404).json({ message: "No staff found" });
+    }
+    return res.status(200).json({ message: "Staff fetched successfully", staff });
+  } catch (err) {
+    console.error("Error fetching staff:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Delete staff by ID
+const deleteStaffById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const staff = await Staff.findByIdAndDelete(id);
+    if (!staff) {
+      return res.status(404).json({ message: "Staff not found" });
+    }
+    return res.status(200).json({ message: "Staff deleted successfully", staff });
+  } catch (err) {
+    console.error("Error deleting staff:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Login staff
+const loginStaff = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+
+    const staff = await Staff.findOne({ email });
+    if (!staff) {
+      return res.status(404).json({ message: "Staff not found" });
+    }
+
+    if (!staff.isActive) {
+      return res.status(403).json({ message: "Staff account is disabled" });
+    }
+
+    const isMatch = await bcrypt.compare(password, staff.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Usually you'd use process.env.JWT_SECRETE but we safeguard with a fallback
+    const token = jwt.sign(
+      { staffId: staff._id, role: staff.role },
+      process.env.JWT_SECRETE || 'fallback_secret',
+      { expiresIn: process.env.EXPIRES_IN || '1d' }
+    );
+
+    return res.status(200).json({
+      message: "Login successful",
+      token,
+      staff: {
+        id: staff._id,
+        name: staff.name,
+        email: staff.email,
+        role: staff.role,
+      },
+    });
+  } catch (err) {
+    console.error("Error logging in staff:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Verify Staff Login (stub to match m.js)
+const verifyStaffLogin = async (req, res) => {
+  res.status(200).json({ message: "Staff login verified successfully" });
+};
+
+// Get inactive staff
+const getInactiveStaff = async (req, res) => {
+  try {
+    const inactiveStaff = await Staff.find({ isActive: false });
+    res.status(200).json({ message: "Inactive staff retrieved successfully", data: inactiveStaff });
+  } catch (err) {
+    console.error("Error fetching inactive staff:", err);
+    res.status(500).json({ message: "Server error fetching inactive staff" });
+  }
+};
+
+// Get active staff
+const getActiveStaff = async (req, res) => {
+  try {
+    const activeStaff = await Staff.find({ isActive: true });
+    res.status(200).json({ message: "Active staff retrieved successfully", data: activeStaff });
+  } catch (err) {
+    console.error("Error fetching active staff:", err);
+    res.status(500).json({ message: "Server error fetching active staff" });
+  }
+};
+
+// Send details
+const sendStaffDetails = async (req, res) => {
+  res.status(200).json({ message: "Staff details sent (stub)" });
+};
+
+// Revoke access
+const revokeStaffAccess = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const staff = await Staff.findByIdAndUpdate(id, { isActive: false }, { new: true });
+    if (!staff) return res.status(404).json({ message: "Staff not found" });
+    res.status(200).json({ message: "Staff access revoked successfully", staff });
+  } catch (err) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 module.exports = {
-  addStaff,
-  editStaff,
-  deactivateStaff,
-  resetPassword,
+  registerStaff,
+  editStaffById,
+  disableStaff,
+  resetStaffPassword,
+  getAllStaff,
+  deleteStaffById,
+  loginStaff,
+  verifyStaffLogin,
+  getInactiveStaff,
+  getActiveStaff,
+  sendStaffDetails,
+  revokeStaffAccess
 };
