@@ -22,7 +22,7 @@ const HospitalITSchema = new mongoose.Schema(
         required: true,
       },
       password: { type: String, minlength: 6, required: true },
-      active: { type: Boolean, default: true },
+      isActive: { type: Boolean, default: true },
       hasChangedPassword: { type: Boolean, default: true },
     },
 

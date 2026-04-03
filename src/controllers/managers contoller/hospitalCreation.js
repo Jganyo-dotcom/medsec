@@ -43,7 +43,7 @@ const loginHospital = async (req, res) => {
 
     if (hospital.isVerified) {
       const token = jwt.sign(
-        { hospitalId: hospital._id, role: hospital.hospitalRep.role },
+        { hospitalId: hospital._id, role: hospital.hospitalRep.role,hospialCode:hospital.hospitalDetails.role },
         process.env.JWT_SECRETE,
         { expiresIn: process.env.EXPIRES_IN },
       );
