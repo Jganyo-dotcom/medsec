@@ -12,6 +12,8 @@ const addStaffSchema = Joi.object({
     .required(),
   department: Joi.string().min(2).required(),
   password: Joi.string().min(6).required(),
+  confirm_password: Joi.string().valid(Joi.ref('password')).required()
+    .messages({ 'any.only': 'Passwords do not match' }),
 });
 
 const editStaffSchema = Joi.object({

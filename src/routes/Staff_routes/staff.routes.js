@@ -8,11 +8,11 @@ const {
   deleteStaffById,
   loginStaff,
   verifyStaffLogin,
-  getInactiveStaff,
-  getActiveStaff,
+  getInactiveStaffs,
+  getActiveStaffs,
   sendStaffDetails,
   revokeStaffAccess
-} = require("../../controllers/staff controller/staffController");
+} = require("../../controllers/it_department/staffController");
 
 const router = express.Router();
 
@@ -24,8 +24,8 @@ router.delete("/delete-staff/:id", deleteStaffById); // delete staff
 router.patch("/disable-staff/:id", disableStaff); // disable staff
 router.put("/edit-staff/:id", editStaffById); // edit staff
 router.patch("/reset-staff-password/:id", resetStaffPassword); // reset staff password
-router.get("/get-inactive-staffs", getInactiveStaff); // get inactive staffs
-router.get("/get-active-staffs", getActiveStaff); // get active staffs
+router.get("/get-inactive-staffs", getInactiveStaffs); // get inactive staffs
+router.get("/get-active-staffs", getActiveStaffs); // get active staffs
 router.get("/send-staff-details/:staffId", sendStaffDetails); // send staff details
 router.get("/revoke-access/:id", revokeStaffAccess); // revoke staff
 
