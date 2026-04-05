@@ -1,42 +1,5 @@
 const mongoose = require("mongoose");
 
-// Sub-schemas for role-specific patient data
-const ClinicalInputSchema = new mongoose.Schema({
-  notes: { type: String },
-  vitals: { type: String },
-  admitted: { type: Boolean, default: false },
-});
-
-const InvestigationSchema = new mongoose.Schema({
-  testName: { type: String, required: true },
-  result: { type: String },
-  date: { type: Date, default: Date.now },
-});
-
-const PrescriptionSchema = new mongoose.Schema({
-  drugName: { type: String, required: true },
-  dosage: { type: String, required: true },
-  duration: { type: String },
-});
-
-const PatientRecordSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  dob: { type: Date, required: true },
-  gender: { type: String, enum: ["Male", "Female", "Other"], required: true },
-
-  // Doctor: full record
-  medicalHistory: { type: String },
-
-  // Nurse: limited clinical input
-  clinicalInput: ClinicalInputSchema,
-
-  // Lab Scientist: investigations only
-  investigations: [InvestigationSchema],
-
-  // Pharmacist: prescriptions only
-  prescriptions: [PrescriptionSchema],
-});
-
 const HospitalITSchema = new mongoose.Schema(
   {
     hospital: {
@@ -60,14 +23,14 @@ const HospitalITSchema = new mongoose.Schema(
       },
       password: { type: String, minlength: 6, required: true },
       isActive: { type: Boolean, default: true },
-      hasChangedPassword: { type: Boolean, default: true },
+      hasChangedPassword: { type: Boolean, default: false },
       resetPassword: { type: Boolean, default: false },
       blocked: { type: Boolean, default: false },
+      isAdminDisabled:{ type: Boolean, default: false },
       failedAttempts: { type: Number, default: 0 }, // for login security
     },
 
-    // Role-based patient records
-    patientRecords: [PatientRecordSchema],
+
 
     // System logs
     systemLogs: [

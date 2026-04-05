@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const { connections } = require("../config/db"); // import your connections object
+
 
 const authmiddleware = (req, res, next) => {
   try {

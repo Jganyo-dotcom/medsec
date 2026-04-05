@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const Staff = require("../../models/it.depart");
+const HospitalIT = require("../../models/it.depart");
+const Hospitals = require("../../models/hospital.schema");
 const {
   addStaffSchema,
   editStaffSchema,
@@ -15,7 +16,15 @@ const registerStaff = async (req, res) => {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const existingStaff = await Staff.findOne({
+    const hospital = await HospitalIT.findOne({
+      hospitalCode: req.user.hospitalCode,
+    });
+    if (!hospital) {
+      return res.status(404).json({ error: "Hospital not found" });
+    }
+
+    // Check for duplicate email/phone
+    const existingStaff = await HospitalIT.findOne({
       $or: [
         { "staffAccounts.email": value.email },
         { "staffAccounts.phone": value.phone },
@@ -23,32 +32,39 @@ const registerStaff = async (req, res) => {
     });
 
     if (existingStaff) {
-      return res.status(400).json({
-        error: "Staff with this email or phone already exists.",
-      });
+      return res
+        .status(400)
+        .json({ error: "Staff with this email or phone already exists." });
     }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(value.password, salt);
 
-    const newStaff = new Staff({
-      ...value,
-      "staffAccounts.password": hashedPassword,
+    const newhospital = new HospitalIT({
+      hospital: req.user.hospital, // or however you reference the hospital
+      hospitalCode: req.user.hospitalCode,
+      staffAccounts: {
+        ...value,
+        password: hashedPassword,
+        isActive: true,
+        failedAttempts: 0,
+        isAdminDisabled: req.user.isdisabled,
+      },
     });
+    await newhospital.save();
 
-    await newStaff.save();
+    const staff = newhospital.staffAccounts;
 
-    //this is what i am talking about . since the one creating the staff account has a hospital code attached to their details make sure to add their hosptal codes
     res.status(201).json({
       message: "Staff added successfully",
       staff: {
-        id: newStaff._id,
-        name: newStaff.staffAccounts.name,
-        email: newStaff.staffAccounts.email,
-        role: value.role,
-        HospitalCode: req.user.hospitalCode, // this is it also go through your code and make sure that it matches the new schema
-        department: newStaff.staffAccounts.department,
-        isActive: newStaff.staffAccounts.isActive,
+        id: staff._id,
+        name: staff.name,
+        email: staff.email,
+        role: staff.role,
+        hospitalCode: hospital.hospitalCode,
+        department: staff.department,
+        isActive: staff.isActive,
       },
     });
   } catch (err) {
@@ -57,27 +73,26 @@ const registerStaff = async (req, res) => {
   }
 };
 
-// Edit an existing staff member
+// Edit staff
 const editStaffById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { hospitalId, staffId } = req.params;
     const { error, value } = editStaffSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
+    if (error) return res.status(400).json({ error: error.details[0].message });
 
-    const staff = await Staff.findById(id);
-    if (!staff) {
-      return res.status(404).json({ error: "Staff not found" });
-    }
+    const hospital = await HospitalIT.findById(hospitalId);
+    if (!hospital) return res.status(404).json({ error: "Hospital not found" });
 
-    // Check if new email/phone already exists in another staff record
+    const staff = hospital.staffAccounts.id(staffId);
+    if (!staff) return res.status(404).json({ error: "Staff not found" });
+
+    // Check duplicates
     if (value.email || value.phone) {
-      const existingStaff = await Staff.findOne({
-        $or: [{ email: value.email || "" }, { phone: value.phone || "" }],
-        _id: { $ne: id },
-      });
-
+      const existingStaff = hospital.staffAccounts.find(
+        (s) =>
+          (s.email === value.email || s.phone === value.phone) &&
+          s._id.toString() !== staffId,
+      );
       if (existingStaff) {
         return res.status(400).json({
           error: "Another staff member already uses this email or phone.",
@@ -86,7 +101,7 @@ const editStaffById = async (req, res) => {
     }
 
     Object.assign(staff, value);
-    await staff.save();
+    await hospital.save();
 
     res.status(200).json({
       message: "Staff updated successfully",
@@ -106,18 +121,18 @@ const editStaffById = async (req, res) => {
   }
 };
 
-// Disable or toggle active status of a staff member
+// Disable/toggle staff
 const disableStaff = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { hospitalId, staffId } = req.params;
+    const hospital = await HospitalIT.findById(hospitalId);
+    if (!hospital) return res.status(404).json({ error: "Hospital not found" });
 
-    const staff = await Staff.findById(id);
-    if (!staff) {
-      return res.status(404).json({ error: "Staff not found" });
-    }
+    const staff = hospital.staffAccounts.id(staffId);
+    if (!staff) return res.status(404).json({ error: "Staff not found" });
 
-    staff.isActive = !staff.isActive; // toggle or set to false
-    await staff.save();
+    staff.isActive = !staff.isActive;
+    await hospital.save();
 
     res.status(200).json({
       message: `Staff ${staff.isActive ? "activated" : "deactivated"} successfully`,
@@ -125,49 +140,61 @@ const disableStaff = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Server error while deactivating staff" });
+    res.status(500).json({ error: "Server error while updating staff status" });
   }
 };
 
 // Reset a staff member's password
 const resetStaffPassword = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { hospitalId, staffId } = req.params;
     const { error, value } = resetPasswordSchema.validate(req.body);
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const staff = await Staff.findById(id);
-    if (!staff) {
-      return res.status(404).json({ error: "Staff not found" });
-    }
+    const hospital = await HospitalIT.findById(hospitalId);
+    if (!hospital) return res.status(404).json({ error: "Hospital not found" });
+
+    const staff = hospital.staffAccounts.id(staffId);
+    if (!staff) return res.status(404).json({ error: "Staff not found" });
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(value.newPassword, salt);
+    staff.password = await bcrypt.hash(value.newPassword, salt);
+    staff.failedAttempts = 0; // reset attempts after password reset
+    await hospital.save();
 
-    staff.password = hashedPassword;
-    await staff.save();
-
-    res.status(200).json({
-      message: "Password reset successfully",
-    });
+    res.status(200).json({ message: "Password reset successfully" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error while resetting password" });
   }
 };
 
-// Get all staff
 const getAllStaff = async (req, res) => {
   try {
-    const staff = await Staff.find();
+    const hospitals = await HospitalIT.find().select(
+      "staffAccounts _id hospitalCode",
+    );
+    const staff = hospitals.map((h) => ({
+      id: h._id, // hospital’s id
+      name: h.staffAccounts.name,
+      email: h.staffAccounts.email,
+      role: h.staffAccounts.role,
+      department: h.staffAccounts.department,
+      isActive: h.staffAccounts.isActive,
+      blocked: h.staffAccounts.blocked,
+      hospitalCode: h.hospitalCode,
+    }));
+
     if (!staff || staff.length === 0) {
       return res.status(404).json({ message: "No staff found" });
     }
-    return res
-      .status(200)
-      .json({ message: "Staff fetched successfully", staff });
+
+    return res.status(200).json({
+      message: "Staff fetched successfully",
+      staff,
+    });
   } catch (err) {
     console.error("Error fetching staff:", err);
     return res.status(500).json({ message: "Internal server error" });
@@ -175,23 +202,31 @@ const getAllStaff = async (req, res) => {
 };
 
 // Delete staff by ID
+const mongoose = require("mongoose");
+
 const deleteStaffById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const staff = await Staff.findByIdAndDelete(id);
-    if (!staff) {
-      return res.status(404).json({ message: "Staff not found" });
+    const { hospitalId } = req.params;
+
+    // Convert hospitalId string to ObjectId
+    const hospitalObjectId = new mongoose.Types.ObjectId(hospitalId);
+
+    const hospital = await HospitalIT.findByIdAndDelete(hospitalObjectId);
+    if (!hospital) {
+      return res.status(404).json({ message: "Hospital not found" });
     }
-    return res
-      .status(200)
-      .json({ message: "Staff deleted successfully", staff });
+
+    return res.status(200).json({
+      message: "Hospital deleted successfully",
+      hospital,
+    });
   } catch (err) {
-    console.error("Error deleting staff:", err);
+    console.error("Error deleting hospital:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
 
-// Login staff
+// Login staff with failedAttempts handling
 const loginStaff = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -201,23 +236,103 @@ const loginStaff = async (req, res) => {
         .json({ message: "Email and password are required" });
     }
 
-    const staff = await Staff.findOne({ email });
-    if (!staff) {
-      return res.status(404).json({ message: "Staff not found" });
+    // First, search HospitalIT for staff
+    let hospital = await HospitalIT.findOne({ "staffAccounts.email": email });
+
+    // If not found, search Hospitals collection
+    if (!hospital) {
+      const hospitalDoc = await Hospitals.findOne({
+        "hospitalRep.email": email,
+      });
+      if (hospitalDoc) {
+        // Add staff details into HospitalIT schema
+        if (hospitalDoc) {
+          try {
+            hospital = new HospitalIT({
+              hospital: hospitalDoc._id,
+              hospitalCode: hospitalDoc.hospitalDetails.code,
+              staffAccounts: {
+                name: hospitalDoc.hospitalRep.name,
+                department: "IT",
+                email: hospitalDoc.hospitalRep.email,
+                phone: hospitalDoc.hospitalRep.phone,
+                role: "Admin",
+                password: hospitalDoc.hospitalRep.password, // make sure this exists
+                isActive: true,
+              },
+            });
+
+            await hospital.save();
+
+            return res
+              .status(201)
+              .json({ message: "We are all set up, try again" });
+          } catch (err) {
+            // Log the full error so you can see what went wrong
+            console.error("Error saving HospitalIT:", err);
+
+            // Handle duplicate key errors (email/phone already exists)
+            if (err.code === 11000) {
+              return res.status(400).json({
+                message: "Duplicate staff email or phone in HospitalIT",
+                details: err.keyValue,
+              });
+            }
+
+            // Handle validation errors
+            if (err.name === "ValidationError") {
+              return res.status(400).json({
+                message: "Validation failed",
+                details: err.errors,
+              });
+            }
+
+            // Fallback for other errors
+            console.log(err);
+            return res.status(500).json({ message: "Internal server error" });
+          }
+        }
+      }
     }
+
+    if (!hospital) return res.status(404).json({ message: "Staff not found" });
+
+    const staff =
+      hospital.staffAccounts.email === email ? hospital.staffAccounts : null;
+    if (!staff) return res.status(404).json({ message: "Staff not found" });
 
     if (!staff.isActive) {
       return res.status(403).json({ message: "Staff account is disabled" });
     }
 
+    // Block if too many failed attempts
+    if (staff.failedAttempts >= 5) {
+      staff.blocked = true;
+      await hospital.save();
+      return res
+        .status(403)
+        .json({ message: "Account blocked due to too many failed attempts" });
+    }
+
     const isMatch = await bcrypt.compare(password, staff.password);
     if (!isMatch) {
+      staff.failedAttempts += 1;
+      await hospital.save();
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // Usually you'd use process.env.JWT_SECRETE but we safeguard with a fallback
+    // Reset failed attempts on success
+    staff.failedAttempts = 0;
+    await hospital.save();
+
     const token = jwt.sign(
-      { staffId: staff._id, role: staff.role },
+      {
+        staffId: staff._id,
+        hospital: hospital._id,
+        role: staff.role,
+        hospitalCode: hospital.hospitalCode,
+        isAdminDisabled: hospital.isAdminDisabled,
+      },
       process.env.JWT_SECRETE || "fallback_secret",
       { expiresIn: process.env.EXPIRES_IN || "1d" },
     );
@@ -238,7 +353,7 @@ const loginStaff = async (req, res) => {
   }
 };
 
-// Verify Staff Login (stub to match m.js)
+// Verify Staff Login
 const verifyStaffLogin = async (req, res) => {
   res.status(200).json({ message: "Staff login verified successfully" });
 };
@@ -246,7 +361,10 @@ const verifyStaffLogin = async (req, res) => {
 // Get inactive staff
 const getInactiveStaff = async (req, res) => {
   try {
-    const inactiveStaff = await Staff.find({ isActive: false });
+    const hospitals = await HospitalIT.find().select("staffAccounts");
+    const inactiveStaff = hospitals.flatMap((h) =>
+      h.staffAccounts.filter((s) => !s.isActive),
+    );
     res.status(200).json({
       message: "Inactive staff retrieved successfully",
       data: inactiveStaff,
@@ -260,7 +378,10 @@ const getInactiveStaff = async (req, res) => {
 // Get active staff
 const getActiveStaff = async (req, res) => {
   try {
-    const activeStaff = await Staff.find({ isActive: true });
+    const hospitals = await HospitalIT.find().select("staffAccounts");
+    const activeStaff = hospitals.flatMap((h) =>
+      h.staffAccounts.filter((s) => s.isActive),
+    );
     res.status(200).json({
       message: "Active staff retrieved successfully",
       data: activeStaff,
@@ -271,7 +392,7 @@ const getActiveStaff = async (req, res) => {
   }
 };
 
-// Send details
+// Send details (stub)
 const sendStaffDetails = async (req, res) => {
   res.status(200).json({ message: "Staff details sent (stub)" });
 };
@@ -279,13 +400,17 @@ const sendStaffDetails = async (req, res) => {
 // Revoke access
 const revokeStaffAccess = async (req, res) => {
   try {
-    const { id } = req.params;
-    const staff = await Staff.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { new: true },
-    );
+    const { hospitalId, staffId } = req.params;
+    const hospital = await HospitalIT.findById(hospitalId);
+    if (!hospital)
+      return res.status(404).json({ message: "Hospital not found" });
+
+    const staff = hospital.staffAccounts.id(staffId);
     if (!staff) return res.status(404).json({ message: "Staff not found" });
+
+    staff.isActive = false;
+    await hospital.save();
+
     res
       .status(200)
       .json({ message: "Staff access revoked successfully", staff });
@@ -295,9 +420,6 @@ const revokeStaffAccess = async (req, res) => {
 };
 
 module.exports = {
-  registerStaff,
-  editStaffById,
-  disableStaff,
   resetStaffPassword,
   getAllStaff,
   deleteStaffById,
@@ -307,4 +429,7 @@ module.exports = {
   getActiveStaff,
   sendStaffDetails,
   revokeStaffAccess,
+  disableStaff,
+  registerStaff,
+  editStaffById,
 };

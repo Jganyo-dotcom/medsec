@@ -75,7 +75,7 @@ const loginHospital = async (req, res) => {
     sgMail.setApiKey(process.env.SENDGRID_API);
 
     const message = {
-      from: process.env.EMAIL_USER,
+      from: process.env.MAIL_USER,
       to: hospital.hospitalDetails.contact.email,
       subject: "Your Hospital Login Code",
       text: `Hello ${hospital.hospitalRep.name},\n\nYour temporary login code is: ${tempCode}\nIt expires in 5 minutes.\nIf you didnt authorise this please contact elikemejay@gmail.com\nBest regards,\nAttendance System`,
@@ -86,8 +86,8 @@ const loginHospital = async (req, res) => {
       .then(() => {
         console.log(`Email sent to ${hospital.hospitalDetails.contact.email}`);
       })
-      .catch((error) => {
-        console.error("Error sending email:", error);
+      .catch((err) => {
+        console.error("Error sending email:", err.response.body.errors);
       });
 
     res.status(200).json({

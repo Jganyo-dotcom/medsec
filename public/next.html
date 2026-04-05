@@ -492,7 +492,7 @@
                 <tr>
                     <td><strong>${h.hospitalDetails.name}</strong><br><small>${h.hospitalDetails.code}</small></td>
                     <td><span class="status-badge ${statusClass}">${h.active ? "Active" : "Inactie"}</span></td>
-                    <td>${h.hospitalRep.name}</td>
+                    <td>${h.hospitalRep.email}||<span>${h.hospitalRep.name}</span></td>
                     <td>
                         <div class="action-group">
                             <button class="icon-btn action-btn email" data-id="${h._id}" title="Send Credentials">📧</button>

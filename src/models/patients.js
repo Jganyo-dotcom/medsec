@@ -1,55 +1,79 @@
 const mongoose = require("mongoose");
 
-const HospitalITSchema = new mongoose.Schema(
+// Sub-schemas for role-specific patient data
+const ClinicalInputSchema = new mongoose.Schema({
+  notes: { type: String },
+  temp: { type: String },
+  pulse: { type: String },
+  bp: { type: String },
+  RR: { type: String },
+  watersaturation: { type: Boolean, default: false },
+});
+
+const InvestigationSchema = new mongoose.Schema({
+  testName: { type: String, required: true },
+  result: { type: String },
+  date: { type: Date, default: Date.now },
+});
+
+const PrescriptionSchema = new mongoose.Schema({
+  drugName: { type: String, required: true },
+  dosage: { type: String, required: true },
+  duration: { type: String },
+  prescribedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "HospitalIT", // link back to hospital
+    required: true,
+  },
+});
+
+// Patient schema
+const PatientSchema = new mongoose.Schema(
   {
-    hospitalId: {
+    staffDetails: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Hospital", // link back to the main hospital record
+      ref: "HospitalIT", // link back to hospital
       required: true,
     },
+    name: { type: String, required: true },
+    dob: { type: Date, required: true },
+    phone: { type: String, required: true },
+    addresse: { type: String, required: true },
+    occupation: { type: String, required: true },
+    tribe: { type: String, required: true },
+    informant: { type: String, required: true },
+    gender: { type: String, enum: ["Male", "Female", "Other"], required: true },
+    // Clinic/Ward assignment
+    wardAssignment: { type: String, required: true },
 
-    // Array of staff accounts
-    staffAccounts: {
-      name: { type: String, required: true },
-      department: { type: String, required: true },
-      email: { type: String, unique: true, required: true },
-      phone: { type: String, unique: true, required: true },
-      role: {
-        type: String,
-        enum: ["Doctor", "Nurse", "Technician", "IT Admin"],
-        required: true,
-      },
-      password: { type: String, minlength: 6, required: true },
-      active: { type: Boolean, default: true },
+    // Department template flag (used later to load Module 2 forms)
+    departmentTemplate: {
+      type: String,
+      enum: ["Medicine", "Obstetrics", "Gynaecology", "Pediatrics", "Surgery"],
+      required: true,
     },
+    medicalHistory: { type: String },
 
-    // Array of patient records
-    patientRecords: [
-      {
-        name: { type: String, required: true },
-        dob: { type: Date, required: true },
-        gender: {
-          type: String,
-          enum: ["Male", "Female", "Other"],
-          required: true,
-        },
-        medicalHistory: { type: String },
-        admitted: { type: Boolean, default: false },
-      },
-    ],
-
-    // Array of system logs
-    systemLogs: [
-      {
-        action: { type: String, required: true },
-        performedBy: { type: String, required: true },
-        timestamp: { type: Date, default: Date.now },
-      },
-    ],
+    clinicalInput: ClinicalInputSchema,
+    investigations: [InvestigationSchema],
+    prescriptions: [PrescriptionSchema],
 
     active: { type: Boolean, default: true },
+
+    dtemplate: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "DTemplate",
+    },
+    drugprescriptions: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Prescription",
+    },
+    attaachements: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Attachment",
+    },
   },
   { timestamps: true },
 );
 
-module.exports = mongoose.model("HospitalIT", HospitalITSchema);
+module.exports = mongoose.model("Patient", PatientSchema);

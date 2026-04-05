@@ -233,7 +233,7 @@
 
         if (res.ok && data.hospital.isVerified === false) {
           // Success: Redirect to OTP verification
-          window.location.href = `/verify.html?hospitalId=${data.hospital.id}`;
+          window.location.href = `verify.html?hospitalId=${data.hospital.id}`;
         } else if (res.ok && data.hospital.isVerified === true) {
           localStorage.setItem("token", data.token);
           localStorage.setItem("hospitalName", data.hospital.name);
