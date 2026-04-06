@@ -30,9 +30,9 @@ const PrescriptionSchema = new mongoose.Schema({
 // Patient schema
 const PatientSchema = new mongoose.Schema(
   {
-    staffDetails: {
+    createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "HospitalIT", // link back to hospital
+      ref: "HospitalIT",
       required: true,
     },
     name: { type: String, required: true },

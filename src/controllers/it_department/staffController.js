@@ -49,6 +49,7 @@ const registerStaff = async (req, res) => {
         isActive: true,
         failedAttempts: 0,
         isAdminDisabled: req.user.isdisabled,
+        createdBy: req.user.id,
       },
     });
     await newhospital.save();
@@ -203,6 +204,7 @@ const getAllStaff = async (req, res) => {
 
 // Delete staff by ID
 const mongoose = require("mongoose");
+const loginLogs = require("../../models/loginLogs");
 
 const deleteStaffById = async (req, res) => {
   try {
@@ -336,6 +338,17 @@ const loginStaff = async (req, res) => {
       process.env.JWT_SECRETE || "fallback_secret",
       { expiresIn: process.env.EXPIRES_IN || "1d" },
     );
+
+    const now = new Date();
+
+    const whoLoggedIn = new LoginLog({
+      staff: staff._id,
+      date: now, // full date
+      time: now.toLocaleTimeString("en-GB", { hour12: false }),
+      // e.g. "14:35:22" (24-hour format, no date)
+    });
+
+    await whoLoggedIn.save();
 
     return res.status(200).json({
       message: "Login successful",
