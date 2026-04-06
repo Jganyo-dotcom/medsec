@@ -128,11 +128,11 @@ const dtemplateSchema = new mongoose.Schema(
       required: true,
     },
     // Embed department-specific clerking templates
-    medicine: medicineSchema,
-    obstetrics: obstetricsSchema,
-    gynaecology: gynaecologySchema,
-    pediatrics: pediatricsSchema,
-    surgery: surgerySchema,
+    medicine: [medicineSchema],
+    obstetrics: [obstetricsSchema],
+    gynaecology: [gynaecologySchema],
+    pediatrics: [pediatricsSchema],
+    surgery: [surgerySchema],
   },
   { timestamps: true },
 );

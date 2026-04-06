@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 
 // Sub-schemas for role-specific patient data
 const ClinicalInputSchema = new mongoose.Schema({
+  date: { type: Date, required: true },
+  time: { type: String },
   notes: { type: String },
   temp: { type: String },
   pulse: { type: String },
@@ -11,12 +13,16 @@ const ClinicalInputSchema = new mongoose.Schema({
 });
 
 const InvestigationSchema = new mongoose.Schema({
+  date: { type: Date, required: true },
+  time: { type: String },
   testName: { type: String, required: true },
   result: { type: String },
   date: { type: Date, default: Date.now },
 });
 
 const PrescriptionSchema = new mongoose.Schema({
+  date: { type: Date, required: true },
+  time: { type: String },
   drugName: { type: String, required: true },
   dosage: { type: String, required: true },
   duration: { type: String },
@@ -35,6 +41,8 @@ const PatientSchema = new mongoose.Schema(
       ref: "HospitalIT",
       required: true,
     },
+    date: { type: Date, required: true },
+    time: { type: String, required: true },
     name: { type: String, required: true },
     dob: { type: Date, required: true },
     phone: { type: String, required: true },
@@ -54,7 +62,7 @@ const PatientSchema = new mongoose.Schema(
     },
     medicalHistory: { type: String },
 
-    clinicalInput: ClinicalInputSchema,
+    clinicalInput: [ClinicalInputSchema],
     investigations: [InvestigationSchema],
     prescriptions: [PrescriptionSchema],
 

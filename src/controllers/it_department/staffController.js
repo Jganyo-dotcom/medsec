@@ -2,11 +2,14 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const HospitalIT = require("../../models/it.depart");
 const Hospitals = require("../../models/hospital.schema");
+const loginLogs = require("../../models/loginLogs");
 const {
   addStaffSchema,
   editStaffSchema,
   resetPasswordSchema,
 } = require("../../validations/staffValidation/staff.validation");
+const lastEdited = require("../../models/lastEdited");
+const deleteBy = require("../../models/deletedBy");
 
 // Register a new staff member
 const registerStaff = async (req, res) => {
@@ -103,6 +106,18 @@ const editStaffById = async (req, res) => {
 
     Object.assign(staff, value);
     await hospital.save();
+
+    const now = new Date();
+    const whoEdited = new lastEdited({
+      staff: staff._id,
+      date: now, // full date
+      time: now.toLocaleTimeString("en-GB", { hour12: false }),
+      // e.g. "14:35:22" (24-hour format, no date)
+      editedWho: req.user.id,
+      editedModel: "HospitalIT",
+    });
+
+    await whoEdited.save();
 
     res.status(200).json({
       message: "Staff updated successfully",
@@ -203,8 +218,6 @@ const getAllStaff = async (req, res) => {
 };
 
 // Delete staff by ID
-const mongoose = require("mongoose");
-const loginLogs = require("../../models/loginLogs");
 
 const deleteStaffById = async (req, res) => {
   try {
@@ -212,18 +225,33 @@ const deleteStaffById = async (req, res) => {
 
     // Convert hospitalId string to ObjectId
     const hospitalObjectId = new mongoose.Types.ObjectId(hospitalId);
+    const Staff = await HospitalIT.findById(hospitalObjectId);
+    if (Staff) {
+      const now = new Date();
 
-    const hospital = await HospitalIT.findByIdAndDelete(hospitalObjectId);
-    if (!hospital) {
-      return res.status(404).json({ message: "Hospital not found" });
+      const whoDeleted = new deleteBy({
+        staff: req.user.id,
+        date: now, // full date
+        time: now.toLocaleTimeString("en-GB", { hour12: false }),
+        // e.g. "14:35:22" (24-hour format, no date)
+        editedWho: Staff.staffAccounts.name,
+        role: Staff.staffAccounts.role,
+      });
+
+      await whoDeleted.save();
+
+      await Staff.deleteOne();
+    }
+    if (!Staff) {
+      return res.status(404).json({ message: "Staff not found" });
     }
 
     return res.status(200).json({
-      message: "Hospital deleted successfully",
-      hospital,
+      message: "Staff deleted successfully",
+
     });
   } catch (err) {
-    console.error("Error deleting hospital:", err);
+    console.error("Error deleting Staff:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -341,7 +369,7 @@ const loginStaff = async (req, res) => {
 
     const now = new Date();
 
-    const whoLoggedIn = new LoginLog({
+    const whoLoggedIn = new loginLog({
       staff: staff._id,
       date: now, // full date
       time: now.toLocaleTimeString("en-GB", { hour12: false }),
