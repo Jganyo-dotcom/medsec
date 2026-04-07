@@ -7,15 +7,9 @@ const HospitalITSchema = new mongoose.Schema(
       ref: "Hospital",
       required: true,
     },
-    loginHistory: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "loginHistory",
-      required: true,
-    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "HospitalIT",
-      default: "N/A",
     },
 
     hospitalCode: { type: String, required: true },
