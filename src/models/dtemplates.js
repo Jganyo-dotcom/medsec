@@ -1,19 +1,19 @@
 const medicineSchema = new mongoose.Schema(
   {
-    presentingComplaint: String,
-    historyOfPresentingComplaint: String,
-    pastMedicalHistory: [String], // e.g. ["HTN", "DM", "Asthma"]
-    familyHistory: [String], // e.g. ["HTN", "SCD"]
-    socialHistory: String,
-    drugAllergyHistory: String,
-    reviewOfSystems: String,
+    presentingComplaint: { type: String },
+    historyOfPresentingComplaint: { type: String },
+    familyHistory: { type: String }, // e.g. ["HTN", "SCD"]
+    pastMedicalHistory:{ type: String },
+    social: { type: String },
+    drugAllergy: { type: String },
+    reviewOfSystems: { type: String },
     examination: {
-      general: String,
-      cardiovascular: String,
-      respiratory: String,
-      abdominal: String,
-      neurological: String,
-      otherSystems: String,
+      general: { type: String },
+      cardiovascular: { type: String },
+      respiratory: { type: String },
+      abdominal: { type: String },
+      neurological: { type: String },
+      otherSystems: { type: String },
     },
   },
   { timestamps: true },
@@ -25,20 +25,20 @@ const obstetricsSchema = new mongoose.Schema(
       type: String,
       enum: ["Booking", "Routine", "Delivery", "Postpartum", "New Complaint"],
     },
-    presentingComplaint: String,
-    historyOfPresentingComplaint: String,
-    pastObstetricHistory: String,
-    gynaecologicalHistory: String,
-    pastMedicalHistory: String,
-    familySocialHistory: String,
-    drugHistory: String,
-    summary: String,
+    presentingComplaint: { type: String },
+    historyOfPresentingComplaint: { type: String },
+    pastObstetricHistory: { type: String },
+    gynaecologicalHistory: { type: String },
+    pastMedicalHistory: { type: String },
+    familySocialHistory: { type: String },
+    drugHistory: { type: String },
+    summary: { type: String },
     examination: {
-      general: String,
-      abdominal: String,
-      symphysiofundalHeight: String,
-      fetalHeartRate: String,
-      obstetricSpecific: String,
+      general: { type: String },
+      abdominal: { type: String },
+      symphysiofundalHeight: { type: String },
+      fetalHeartRate: { type: String },
+      obstetricSpecific: { type: String },
     },
   },
   { timestamps: true },
@@ -46,18 +46,18 @@ const obstetricsSchema = new mongoose.Schema(
 
 const gynaecologySchema = new mongoose.Schema(
   {
-    biodata: String,
-    presentingComplaint: String,
-    historyOfPresentingComplaint: String, // 5Cs
-    gynaecologicalHistory: String,
-    obstetricHistory: String,
-    pastMedicalHistory: String,
-    familySocialHistory: String,
-    summary: String,
+    biodata: { type: String },
+    presentingComplaint: { type: String },
+    historyOfPresentingComplaint: { type: String }, // 5Cs
+    gynaecologicalHistory: { type: String },
+    obstetricHistory: { type: String },
+    pastMedicalHistory: { type: String },
+    familySocialHistory: { type: String },
+    summary: { type: String },
     examination: {
-      general: String,
-      abdominal: String,
-      pelvic: String,
+      general: { type: String },
+      abdominal: { type: String },
+      pelvic: { type: String },
     },
   },
   { timestamps: true },
@@ -65,35 +65,35 @@ const gynaecologySchema = new mongoose.Schema(
 
 const pediatricsSchema = new mongoose.Schema(
   {
-    biodata: String, // NASRATI
-    presentingComplaints: String,
-    historyOfPresentingComplaint: String, // 5Cs
-    pastMedicalHistory: String,
-    prenatalHistory: String,
-    natalHistory: String,
-    postnatalHistory: String,
-    dietaryHistory: String,
-    immunizationHistory: [String], // dropdowns for NPI schedule
+    biodata: { type: String }, // NASRATI
+    presentingComplaints: { type: String },
+    historyOfPresentingComplaint: { type: String }, // 5Cs
+    pastMedicalHistory: { type: String },
+    prenatalHistory: { type: String },
+    natalHistory: { type: String },
+    postnatalHistory: { type: String },
+    dietaryHistory: { type: String },
+    immunizationHistory: [{ type: String }], // dropdowns for NPI schedule
     developmentalMilestones: {
-      grossMotor: String,
-      fineMotor: String,
-      verbal: String,
-      social: String,
+      grossMotor: { type: String },
+      fineMotor: { type: String },
+      verbal: { type: String },
+      social: { type: String },
     },
-    familySocialHistory: String,
-    reviewOfSystems: String,
-    drugAllergyHistory: String,
-    summary: String,
+    familySocialHistory: { type: String },
+    reviewOfSystems: { type: String },
+    drugAllergyHistory: { type: String },
+    summary: { type: String },
     examination: {
-      general: String,
-      anthropometry: String,
+      general: { type: String },
+      anthropometry: { type: String },
       systemic: {
-        cardiovascular: String,
-        respiratory: String,
-        abdominal: String,
-        neurological: String,
-        skin: String,
-        ent: String,
+        cardiovascular: { type: String },
+        respiratory: { type: String },
+        abdominal: { type: String },
+        neurological: { type: String },
+        skin: { type: String },
+        ent: { type: String },
       },
     },
   },
@@ -102,19 +102,19 @@ const pediatricsSchema = new mongoose.Schema(
 
 const surgerySchema = new mongoose.Schema(
   {
-    biodata: String,
-    presentingComplaints: String, // chronological
-    historyOfPresentingComplaints: String, // SCS
-    pastMedicalHistory: String,
-    familySocialHistory: String,
-    drugHistory: String,
-    reviewOfSystems: String,
-    summary: String,
+    biodata: { type: String },
+    presentingComplaints: { type: String }, // chronological
+    historyOfPresentingComplaints: { type: String }, // SCS
+    pastMedicalHistory: { type: String },
+    familySocialHistory: { type: String },
+    drugHistory: { type: String },
+    reviewOfSystems: { type: String },
+    summary: { type: String },
     examination: {
-      general: String,
-      abdominal: String,
-      limbJoints: String,
-      neurological: String,
+      general: { type: String },
+      abdominal: { type: String },
+      limbJoints: { type: String },
+      neurological: { type: String },
     },
   },
   { timestamps: true },
@@ -124,10 +124,9 @@ const dtemplateSchema = new mongoose.Schema(
   {
     patient: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Patient", // link back to patient
+      ref: "Patient",
       required: true,
     },
-    // Embed department-specific clerking templates
     medicine: [medicineSchema],
     obstetrics: [obstetricsSchema],
     gynaecology: [gynaecologySchema],

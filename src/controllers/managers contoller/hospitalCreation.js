@@ -204,7 +204,7 @@ const registerHospital = async (req, res) => {
 
     // Check if hospital address exists
     const findExistingAddress = await Hospitals.findOne({
-      "hospitalName.contact.addresse": value.h_addresse,
+      "hospitalDetails.addresse": value.h_addresse,
     });
 
     if (findExistingAddress) {

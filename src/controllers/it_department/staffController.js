@@ -369,7 +369,7 @@ const loginStaff = async (req, res) => {
 
     const now = new Date();
 
-    const whoLoggedIn = new loginLog({
+    const whoLoggedIn = new loginLogs({
       staff: staff._id,
       date: now, // full date
       time: now.toLocaleTimeString("en-GB", { hour12: false }),

@@ -10,7 +10,7 @@ const HospitalITSchema = new mongoose.Schema(
     loginHistory: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "loginHistory",
-      default: "N/A",
+      required: true,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,

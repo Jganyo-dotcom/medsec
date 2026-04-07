@@ -51,13 +51,13 @@ const PatientTestSchema = new mongoose.Schema(
       ref: "HospitalIT",
       required: true,
     }, // clinician name or ID
-    result: { type: String }, // free text or structured JSON
+    result: { type: String, required: false }, // free text or structured JSON
     resultDate: { type: Date },
     enteredBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "HospitalIT",
       required: true,
-    }, 
+    },
     alertSent: { type: Boolean, default: false },
   },
   { timestamps: true },

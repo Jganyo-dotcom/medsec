@@ -5,7 +5,6 @@ const Patient = require("../../models/patients");
 const orderInvestigation = async (req, res) => {
   try {
     const {
-      patient,
       hematology,
       microbiology,
       radiology,
@@ -13,35 +12,28 @@ const orderInvestigation = async (req, res) => {
       orderedBy,
       enteredBy, // Usually someone enters it, schema requires it
     } = req.body;
+    const { patientId } = req.params;
 
     const newTest = new PatientTest({
-      patient,
+      patient: patientId,
       hematology: hematology || [],
       microbiology: microbiology || [],
       radiology: radiology || [],
       histopathology: histopathology || [],
-      orderedBy,
-      enteredBy: enteredBy || orderedBy, // Fallback since schema requires it
+      orderedBy: req.user.id,
       status: "Ordered",
     });
 
     await newTest.save();
 
-    // Optionally update the patient's inline investigations array if needed
-    // Assuming we just map base info to the Patient's investigation array
-    await Patient.findByIdAndUpdate(patient, {
-      $push: {
-        investigations: {
-          testName: "Multiple Tests Ordered",
-          date: new Date(),
-          result: "Pending",
-        },
-      },
-    });
-
-    res.status(201).json({ message: "Investigation ordered successfully", data: newTest });
+   
+    const ordered = PatientTest.find({ patient: patientId }).populate("patient")
+      .res.status(201)
+      .json({ message: "Investigation ordered successfully", data: ordered });
   } catch (error) {
-    res.status(500).json({ message: "Error ordering investigation", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error ordering investigation", error: error.message });
   }
 };
 
@@ -49,7 +41,7 @@ const orderInvestigation = async (req, res) => {
 const getInvestigationQueue = async (req, res) => {
   try {
     const { status } = req.query; // e.g., "Ordered", "In Queue", "Completed"
-    
+
     const filter = {};
     if (status) {
       filter.status = status;
@@ -60,9 +52,15 @@ const getInvestigationQueue = async (req, res) => {
       .populate("orderedBy", "name")
       .sort({ createdAt: -1 });
 
-    res.status(200).json({ message: "Investigation queue retrieved carefully", data: queue });
+    res.status(200).json({
+      message: "Investigation queue retrieved carefully",
+      data: queue,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Error retrieving investigation queue", error: error.message });
+    res.status(500).json({
+      message: "Error retrieving investigation queue",
+      error: error.message,
+    });
   }
 };
 
@@ -77,7 +75,7 @@ const enterResult = async (req, res) => {
       hematology,
       microbiology,
       radiology,
-      histopathology
+      histopathology,
     } = req.body;
 
     // We can also update specific sub-documents if passed
@@ -94,11 +92,9 @@ const enterResult = async (req, res) => {
     if (radiology) updateData.radiology = radiology;
     if (histopathology) updateData.histopathology = histopathology;
 
-    const updatedTest = await PatientTest.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true }
-    );
+    const updatedTest = await PatientTest.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
 
     if (!updatedTest) {
       return res.status(404).json({ message: "Investigation not found" });
@@ -115,9 +111,15 @@ const enterResult = async (req, res) => {
       },
     });
 
-    res.status(200).json({ message: "Result entered, patient record auto-updated, and clinician alerted", data: updatedTest });
+    res.status(200).json({
+      message:
+        "Result entered, patient record auto-updated, and clinician alerted",
+      data: updatedTest,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Error entering result", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error entering result", error: error.message });
   }
 };
 
