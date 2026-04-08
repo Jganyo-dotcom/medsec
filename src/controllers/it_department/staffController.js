@@ -248,7 +248,6 @@ const deleteStaffById = async (req, res) => {
 
     return res.status(200).json({
       message: "Staff deleted successfully",
-
     });
   } catch (err) {
     console.error("Error deleting Staff:", err);
@@ -357,8 +356,8 @@ const loginStaff = async (req, res) => {
 
     const token = jwt.sign(
       {
-        staffId: staff._id,
-        hospital: hospital._id,
+        staff: hospital._id,
+        hospital: hospital.hospital,
         role: staff.role,
         hospitalCode: hospital.hospitalCode,
         isAdminDisabled: hospital.isAdminDisabled,
@@ -367,10 +366,11 @@ const loginStaff = async (req, res) => {
       { expiresIn: process.env.EXPIRES_IN || "1d" },
     );
 
+    
     const now = new Date();
 
     const whoLoggedIn = new loginLogs({
-      staff: staff._id,
+      staff: hospital._id,
       date: now, // full date
       time: now.toLocaleTimeString("en-GB", { hour12: false }),
       // e.g. "14:35:22" (24-hour format, no date)
