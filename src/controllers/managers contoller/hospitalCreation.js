@@ -43,7 +43,11 @@ const loginHospital = async (req, res) => {
 
     if (hospital.isVerified) {
       const token = jwt.sign(
-        { hospitalId: hospital._id, role: hospital.hospitalRep.role,hospialCode:hospital.hospitalDetails.role },
+        {
+          hospitalId: hospital._id,
+          role: hospital.hospitalRep.role,
+          hospialCode: hospital.hospitalDetails.role,
+        },
         process.env.JWT_SECRETE,
         { expiresIn: process.env.EXPIRES_IN },
       );
@@ -318,8 +322,8 @@ const disableHospital = async (req, res) => {
       message: "Hospital disabled successfully",
       hospital: {
         id: hospital._id,
-        name: hospital.hospitalName.name,
-        code: hospital.hospitalName.code,
+        name: hospital.hospitalDetails?.name,
+        code: hospital.hospitalDetails?.code,
         isdisabled: hospital.isdisabled,
       },
     });
@@ -434,11 +438,13 @@ From ctrl + create team
 
     // Send email
     await sgMail.send(msg);
-    console.log(hospital.hospitalRep.email)
+    console.log(hospital.hospitalRep.email);
 
     return res
       .status(200)
-      .json({ message: `Hospital details sent to ${hospital.hospitalRep.email}` });
+      .json({
+        message: `Hospital details sent to ${hospital.hospitalRep.email}`,
+      });
 
     res.status(200).json({ message: "Hospital details sent to rep email" });
   } catch (err) {
@@ -482,10 +488,10 @@ const updateHospital = async (req, res) => {
 // Revoke hospital rep access by hospital ID
 const revokeHospitalAdminAccess = async (req, res) => {
   try {
-    const { hospitalId } = req.params;
+    const { Id } = req.params;
 
     const updatedHospital = await Hospitals.findByIdAndUpdate(
-      hospitalId,
+      Id,
       { $set: { "hospitalRep.revokedAccess": true } },
       { new: true, runValidators: true },
     );
