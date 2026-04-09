@@ -440,11 +440,9 @@ From ctrl + create team
     await sgMail.send(msg);
     console.log(hospital.hospitalRep.email);
 
-    return res
-      .status(200)
-      .json({
-        message: `Hospital details sent to ${hospital.hospitalRep.email}`,
-      });
+    return res.status(200).json({
+      message: `Hospital details sent to ${hospital.hospitalRep.email}`,
+    });
 
     res.status(200).json({ message: "Hospital details sent to rep email" });
   } catch (err) {
@@ -453,22 +451,40 @@ From ctrl + create team
   }
 };
 
-// Edit hospital details (PATCH)
 const updateHospital = async (req, res) => {
   try {
-    const { hospitalId } = req.params;
+    const { id } = req.params;
     const updates = req.body;
 
-    // Guard against empty updates
     if (!updates || Object.keys(updates).length === 0) {
       return res.status(400).json({ message: "No update fields provided" });
     }
 
+    // Block immutable fields
+    const blockedFields = [
+      "hospitalDetails.code",
+      "isdisabled",
+      "active",
+      "isVerified",
+      "tempLoginCode",
+      "tempLoginExpires",
+    ];
+
+    for (const field of blockedFields) {
+      // Check nested fields safely
+      const value = field.split(".").reduce((obj, key) => obj?.[key], updates);
+      if (value !== undefined && value !== null) {
+        return res
+          .status(401)
+          .json({ message: `Updating ${field} is not allowed` });
+      }
+    }
+
     // Apply updates safely
     const updatedHospital = await Hospitals.findByIdAndUpdate(
-      hospitalId,
+      id,
       { $set: updates },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     );
 
     if (!updatedHospital) {
