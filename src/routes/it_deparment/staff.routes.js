@@ -22,7 +22,7 @@ router.post("/login-staff", loginStaff); // login staff
 router.post("/verify-login", verifyStaffLogin); // verify staff
 router.get("/get-staffs",authmiddleware, getAllStaff); // get all
 router.delete("/delete-staff/:hospitalId", authmiddleware,deleteStaffById); // delete staff
-router.patch("/disable-staff/:id",authmiddleware, disableStaff); // disable staff
+router.patch("/disable-staff/:hospitalId/:staffId",authmiddleware, disableStaff); // disable staff
 router.put("/edit-staff/:id",authmiddleware, editStaffById); // edit staff
 router.patch("/reset-staff-password/:id",authmiddleware, resetStaffPassword); // reset staff password
 router.get("/get-inactive-staffs",authmiddleware, getInactiveStaff); // get inactive staffs

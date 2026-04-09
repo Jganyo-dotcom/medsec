@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const HospitalIT = require("../../models/it.depart");
 const Hospitals = require("../../models/hospital.schema");
 const loginLogs = require("../../models/loginLogs");
+const mongoose = require("mongoose");
 const {
   addStaffSchema,
   editStaffSchema,
@@ -141,21 +142,23 @@ const editStaffById = async (req, res) => {
 const disableStaff = async (req, res) => {
   try {
     const { hospitalId, staffId } = req.params;
-    const hospital = await HospitalIT.findById(hospitalId);
+
+    const hospital = await Hospitals.findById(hospitalId);
     if (!hospital) return res.status(404).json({ error: "Hospital not found" });
 
-    const staff = hospital.staffAccounts.id(staffId);
+    const staff = await HospitalIT.findById(staffId);
     if (!staff) return res.status(404).json({ error: "Staff not found" });
 
-    staff.isActive = !staff.isActive;
-    await hospital.save();
+    // Toggle blocked status
+    staff.staffAccounts.blocked = !staff.staffAccounts.blocked;
+    await staff.save();
 
     res.status(200).json({
-      message: `Staff ${staff.isActive ? "activated" : "deactivated"} successfully`,
-      isActive: staff.isActive,
+      message: `Staff ${staff.staffAccounts.blocked ? "deactivated" : "activated"} successfully`,
+      blocked: staff.staffAccounts.blocked,
     });
   } catch (err) {
-    console.error(err);
+    console.error("Error disabling staff:", err);
     res.status(500).json({ error: "Server error while updating staff status" });
   }
 };
@@ -222,15 +225,15 @@ const getAllStaff = async (req, res) => {
 const deleteStaffById = async (req, res) => {
   try {
     const { hospitalId } = req.params;
-
     // Convert hospitalId string to ObjectId
     const hospitalObjectId = new mongoose.Types.ObjectId(hospitalId);
     const Staff = await HospitalIT.findById(hospitalObjectId);
+
     if (Staff) {
       const now = new Date();
 
       const whoDeleted = new deleteBy({
-        staff: req.user.id,
+        staff: req.user.staff,
         date: now, // full date
         time: now.toLocaleTimeString("en-GB", { hour12: false }),
         // e.g. "14:35:22" (24-hour format, no date)
@@ -366,7 +369,6 @@ const loginStaff = async (req, res) => {
       { expiresIn: process.env.EXPIRES_IN || "1d" },
     );
 
-    
     const now = new Date();
 
     const whoLoggedIn = new loginLogs({
