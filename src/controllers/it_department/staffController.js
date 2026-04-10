@@ -172,15 +172,16 @@ const resetStaffPassword = async (req, res) => {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const hospital = await HospitalIT.findById(hospitalId);
+    const hospital = await Hospitals.findById(hospitalId);
     if (!hospital) return res.status(404).json({ error: "Hospital not found" });
 
-    const staff = hospital.staffAccounts.id(staffId);
+    const staff = HospitalIT.findById(staffId);
     if (!staff) return res.status(404).json({ error: "Staff not found" });
 
     const salt = await bcrypt.genSalt(10);
-    staff.password = await bcrypt.hash(value.newPassword, salt);
-    staff.failedAttempts = 0; // reset attempts after password reset
+    staff.staffAccounts.password = await bcrypt.hash(value.newPassword, salt);
+    staff.staffAccounts.failedAttempts = 0; // reset attempts after password reset
+    staff.staffAccounts.hasChangedPassword = false;
     await hospital.save();
 
     res.status(200).json({ message: "Password reset successfully" });
