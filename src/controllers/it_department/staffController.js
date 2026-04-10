@@ -175,9 +175,10 @@ const resetStaffPassword = async (req, res) => {
     const hospital = await Hospitals.findById(hospitalId);
     if (!hospital) return res.status(404).json({ error: "Hospital not found" });
 
-    const staff = HospitalIT.findById(staffId);
-    if (!staff) return res.status(404).json({ error: "Staff not found" });
-
+    const staff = await HospitalIT.findOne({ _id: staffId, hospital: hospitalId });
+    if (!staff || staff.length === 0) {
+      return res.status(404).json({ error: "Staff not found" });
+    }
     const salt = await bcrypt.genSalt(10);
     staff.staffAccounts.password = await bcrypt.hash(value.newPassword, salt);
     staff.staffAccounts.failedAttempts = 0; // reset attempts after password reset
