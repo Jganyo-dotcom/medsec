@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clinical OS | Doctor Dashboard</title>
+    <link rel="stylesheet" href="doc.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="app-container">
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <i class="fas fa-hand-holding-medical"></i>
+          <span>MediCore v2</span>
+        </div>
+
+        <nav class="nav-menu" id="navMenu">
+          <a class="nav-item active" data-section="directory">
+            <i class="fas fa-users"></i> Patient Directory
+          </a>
+          <a class="nav-item" data-section="registration">
+            <i class="fas fa-user-plus"></i> New Registration
+          </a>
+          <a class="nav-item" data-section="clerking">
+            <i class="fas fa-file-signature"></i> Clinical Clerking
+          </a>
+        </nav>
+
+        <div class="sidebar-footer" id="staffInfo">
+          <p id="staffName">Loading...</p>
+          <span id="staffRole">—</span>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="top-bar">
+          <div class="search-wrapper">
+            <i class="fas fa-search"></i>
+            <input
+              id="patientSearch"
+              type="text"
+              placeholder="Search patients by name, tribe, or ID"
+            />
+            <button id="searchBtn" class="btn">Search</button>
+          </div>
+          <div class="status-indicators">
+            <span class="status-badge online" id="serverStatus"
+              >Server: Checking</span
+            >
+            <div class="profile-circle" id="profileInitials">--</div>
+          </div>
+        </header>
+
+        <section id="directory" class="content-section">
+          <div class="section-header">
+            <h2>Active Patient Directory</h2>
+          </div>
+
+          <div class="card full-width">
+            <table id="patientTable" aria-live="polite">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Folder ID</th>
+                  <th>Dept</th>
+                  <th>Sex / Age</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="patientTbody"></tbody>
+            </table>
+
+            <div class="pagination">
+              <button id="prevPage" class="btn">Prev</button>
+              <span id="pageInfo">Page 1</span>
+              <button id="nextPage" class="btn">Next</button>
+            </div>
+          </div>
+        </section>
+
+        <section
+          id="registration"
+          class="content-section"
+          style="display: none"
+        >
+          <div class="section-header"><h2>Patient Registration</h2></div>
+          <div class="card">
+            <form
+              id="registrationForm"
+              class="clinical-form"
+              autocomplete="off"
+            >
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Full Name</label><input name="name" required />
+                </div>
+                <div class="form-group">
+                  <label>DOB</label><input name="dob" type="date" required />
+                </div>
+                <div class="form-group">
+                  <label>Sex</label
+                  ><select name="sex" required>
+                    <option value="">Select</option>
+                    <option>Male</option>
+                    <option>Female</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Phone</label><input name="phone" type="tel" />
+                </div>
+                <div class="form-group">
+                  <label>Occupation</label><input name="occupation" />
+                </div>
+                <div class="form-group">
+                  <label>Tribe</label><input name="tribe" />
+                </div>
+                <div class="form-group">
+                  <label>Informant</label><input name="informant" />
+                </div>
+                <div class="form-group">
+                  <label>Assignment</label
+                  ><select name="clinic" id="deptAssign" required></select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Address</label
+                ><textarea name="address" rows="2"></textarea>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-primary">
+                  Register & Create Folder
+                </button>
+                <button type="button" id="clearRegistration" class="btn">
+                  Clear
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section id="clerking" class="content-section" style="display: none">
+          <div class="section-header">
+            <h2>Clinical Clerking</h2>
+            <select id="moduleSwitcher" class="module-pill">
+              <option value="medicine">Internal Medicine</option>
+              <option value="obstetrics">Obstetrics</option>
+              <option value="pediatrics">Pediatrics</option>
+              <option value="surgery">Surgery</option>
+            </select>
+          </div>
+
+          <div id="clerkingCard" class="card">
+            <form id="clerkingForm">
+              <div class="form-group">
+                <label>Patient Folder ID</label
+                ><input id="clerkingPatientId" name="patientId" required />
+              </div>
+              <div class="form-group">
+                <label>Presenting Complaint</label
+                ><textarea name="presentingComplaint" rows="2"></textarea>
+              </div>
+              <div class="form-group">
+                <label>History of Presenting Complaint</label
+                ><textarea name="history" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Past Medical History</label><input name="pastMedical" />
+              </div>
+              <div class="form-group">
+                <label>Family History</label><input name="familyHistory" />
+              </div>
+              <div class="form-group">
+                <label>Social History</label><input name="socialHistory" />
+              </div>
+              <div class="form-group">
+                <label>Drug & Allergy History</label
+                ><input name="drugAllergy" />
+              </div>
+              <div class="form-actions">
+                <button type="button" id="saveDraft" class="btn">
+                  Save Draft
+                </button>
+                <button type="submit" class="btn-primary">
+                  Finalize Clerking
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="doc.js"></script>
+  </body>
+</html>
