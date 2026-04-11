@@ -34,15 +34,6 @@ const HospitalITSchema = new mongoose.Schema(
       failedAttempts: { type: Number, default: 0 }, // for login security
     },
 
-    // System logs
-    systemLogs: [
-      {
-        action: { type: String, required: true },
-        performedBy: { type: String, required: true },
-        timestamp: { type: Date, default: Date.now },
-      },
-    ],
-
     active: { type: Boolean, default: true },
   },
   { timestamps: true },
