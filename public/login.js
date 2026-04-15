@@ -13,24 +13,30 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     });
     const data = await res.json();
     console.log(data);
+
     if (res.ok) {
-      console.log(data);
       alert(data.message);
 
       // If the backend did not return a token, it means setup mode
       if (!data.token || !data.staff) {
-        // setup case: don't try to store staff info
         return;
       }
 
-      // Normal login case
+      // Normal login case: store auth info
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("staffName", data.staff.name);
       localStorage.setItem("staffRole", data.staff.role);
       localStorage.setItem("staffEmail", data.staff.email);
 
-      // redirect to dashboard
-      window.location.href = "IT.html";
+      // Redirect based on role
+      if (data.staff.role === "Admin") {
+        window.location.href = "IT.html";
+      } else if (data.staff.role === "Doctor") {
+        window.location.href = "doc.html";
+      } else {
+        // fallback for other roles
+        window.location.href = "ITG.html";
+      }
     } else {
       alert(data.message || "Login failed");
     }

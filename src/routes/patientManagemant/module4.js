@@ -7,8 +7,8 @@ const {
 
 const router = express.Router();
 
-router.post("/prescribe", prescribeDrug);
-router.get("/queue", getPrescriptions);
-router.put("/update/:id", updatePrescriptionStatus);
+// router.post("/prescribe", prescribeDrug);
+// router.get("/queue", getPrescriptions);
+// router.put("/update/:id", updatePrescriptionStatus);
 
 module.exports = router;

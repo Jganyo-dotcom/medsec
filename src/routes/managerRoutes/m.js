@@ -11,6 +11,7 @@ const {
   // getTotalStaff,
   loginHospital,
   verifyHospitalLogin,
+  updateHospital,
 } = require("../../controllers/managers contoller/hospitalCreation");
 
 const router = express.Router();
@@ -22,10 +23,11 @@ router.get("/get-hospitals", getAllHospitals); // get all
 router.delete("/delete-hospital/:id", deleteHospitalById); // delete hospital
 router.patch("/disable-hospital/:id", disableHospital); // disable hospital
 ///////
-router.get("/get-inactive-hospitals", IsactiveHospital); // to get the inactive hospital
+router.get("/get-active-hospitals", IsactiveHospital); // to get the inactive hospital
 router.get("/get-inactive-hospitals", getInactiveHospitals); //to get the inactive hospital
-router.get("/send-hospital-details/:hospitalId", sendHospitalDetails); // send hospital details to admin
-router.get("/revoke-access/:id", revokeHospitalAdminAccess); // revoke hospital
-// router.get("/total-staff", getTotalStaff); // revoke hospital
+router.get("/send-hospital-details/:hospitalId", sendHospitalDetails);
+router.patch("/hospital-update/:id", updateHospital); // send hospital details to admin
+router.get("/revoke-access/:Id", revokeHospitalAdminAccess); // revoke hospital
+//router.get("/total-staff", getTotalStaff); 
 
 module.exports = router;

@@ -3,7 +3,7 @@ const Joi = require("joi");
 const addStaffSchema = Joi.object({
   name: Joi.string().min(3).required(),
   role: Joi.string()
-    .valid("Doctor", "Nurse", "Technician", "IT Admin", "Other")
+    .valid("Doctor", "Nurse", "Technician", "Admin", "Other")
     .required(),
   email: Joi.string().email().required(),
   phone: Joi.string()

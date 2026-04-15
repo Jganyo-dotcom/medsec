@@ -7,15 +7,9 @@ const HospitalITSchema = new mongoose.Schema(
       ref: "Hospital",
       required: true,
     },
-    loginHistory: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "loginHistory",
-      required: true,
-    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "HospitalIT",
-      default: "N/A",
     },
 
     hospitalCode: { type: String, required: true },
@@ -39,15 +33,6 @@ const HospitalITSchema = new mongoose.Schema(
       isAdminDisabled: { type: Boolean, default: false },
       failedAttempts: { type: Number, default: 0 }, // for login security
     },
-
-    // System logs
-    systemLogs: [
-      {
-        action: { type: String, required: true },
-        performedBy: { type: String, required: true },
-        timestamp: { type: Date, default: Date.now },
-      },
-    ],
 
     active: { type: Boolean, default: true },
   },

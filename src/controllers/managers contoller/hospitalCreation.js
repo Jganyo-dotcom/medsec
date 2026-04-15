@@ -6,6 +6,22 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const sgMail = require("@sendgrid/mail");
 
+const { google } = require("googleapis");
+
+// Configure OAuth2 client once at the top of your server
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI,
+);
+
+// Use the refresh token so Google can auto-refresh access tokens
+oauth2Client.setCredentials({
+  refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+});
+
+const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
 const loginHospital = async (req, res) => {
   try {
     const { identifier, password } = req.body;
@@ -43,7 +59,11 @@ const loginHospital = async (req, res) => {
 
     if (hospital.isVerified) {
       const token = jwt.sign(
-        { hospitalId: hospital._id, role: hospital.hospitalRep.role,hospialCode:hospital.hospitalDetails.role },
+        {
+          hospitalId: hospital._id,
+          role: hospital.hospitalRep.role,
+          hospialCode: hospital.hospitalDetails.role,
+        },
         process.env.JWT_SECRETE,
         { expiresIn: process.env.EXPIRES_IN },
       );
@@ -71,24 +91,34 @@ const loginHospital = async (req, res) => {
     hospital.tempLoginExpires = Date.now() + 5 * 60 * 1000;
     await hospital.save();
 
-    // Send email with temp code
-    sgMail.setApiKey(process.env.SENDGRID_API);
+    // Build email body
+    const emailText = `Hello ${hospital.hospitalRep.name},
 
-    const message = {
-      from: process.env.MAIL_USER,
-      to: hospital.hospitalDetails.contact.email,
-      subject: "Your Hospital Login Code",
-      text: `Hello ${hospital.hospitalRep.name},\n\nYour temporary login code is: ${tempCode}\nIt expires in 5 minutes.\nIf you didnt authorise this please contact elikemejay@gmail.com\nBest regards,\nAttendance System`,
-    };
+Your temporary login code is: ${tempCode}
+It expires in 5 minutes.
 
-    sgMail
-      .send(message)
-      .then(() => {
-        console.log(`Email sent to ${hospital.hospitalDetails.contact.email}`);
-      })
-      .catch((err) => {
-        console.error("Error sending email:", err.response.body.errors);
-      });
+If you didn’t authorise this please contact elikemejay@gmail.com
+
+Best regards,
+Attendance System`;
+
+    // Gmail requires base64url encoding
+    const raw = Buffer.from(
+      `To: ${hospital.hospitalDetails.contact.email}\r\n` +
+        `From: ${process.env.MAIL_USER}\r\n` +
+        `Subject: Your Hospital Login Code\r\n\r\n` +
+        emailText,
+    )
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_");
+
+    await gmail.users.messages.send({
+      userId: "me",
+      requestBody: { raw },
+    });
+
+    console.log(`Email sent to ${hospital.hospitalDetails.contact.email}`);
 
     res.status(200).json({
       message: "Temporary code sent to hospital email",
@@ -318,8 +348,8 @@ const disableHospital = async (req, res) => {
       message: "Hospital disabled successfully",
       hospital: {
         id: hospital._id,
-        name: hospital.hospitalName.name,
-        code: hospital.hospitalName.code,
+        name: hospital.hospitalDetails?.name,
+        code: hospital.hospitalDetails?.code,
         isdisabled: hospital.isdisabled,
       },
     });
@@ -382,7 +412,10 @@ const getactiveHospitals = async (req, res) => {
   }
 };
 
-// Send hospital details to rep email
+
+
+
+
 const sendHospitalDetails = async (req, res) => {
   try {
     const { hospitalId } = req.params;
@@ -393,26 +426,9 @@ const sendHospitalDetails = async (req, res) => {
       return res.status(404).json({ message: "Hospital not found" });
     }
 
-    // Configure mail transport
-    // const transporter = nodemailer.createTransport({
-    //   service: "gmail", // or use SMTP config
-    //   auth: {
-    //     user: process.env.MAIL_USER,
-    //     pass: process.env.MAIL_PASS,
-    //   },
-    // });
-
-    // Build email content
-
-    sgMail.setApiKey(process.env.SENDGRID_API);
-
-    const msg = {
-      from: process.env.MAIL_USER,
-      to: hospital.hospitalRep.email,
-      subject: "Hospital Registration Details",
-      text: `
+    // Build email body
+    const emailText = `
 Hello ${hospital.hospitalRep.name},
-
 
 Your hospital has been registered successfully.
 
@@ -425,44 +441,75 @@ Email: ${hospital.hospitalDetails.contact.email}
 Rep Name: ${hospital.hospitalRep.name}
 Rep Phone: ${hospital.hospitalRep.phone}
 Rep Email: ${hospital.hospitalRep.email}
-your temporary password is "ctrl+createLabs"
+
+Your temporary password is "ctrl+createLabs"
 
 Best regards,
 From ctrl + create team
-      `,
-    };
+    `;
+
+    // Gmail API requires base64url encoding
+    const raw = Buffer.from(
+      `To: ${hospital.hospitalRep.email}\r\n` +
+        `From: ${process.env.MAIL_USER}\r\n` +
+        `Subject: Hospital Registration Details\r\n\r\n` +
+        emailText,
+    )
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_");
 
     // Send email
-    await sgMail.send(msg);
-    console.log(hospital.hospitalRep.email)
+    await gmail.users.messages.send({
+      userId: "me",
+      requestBody: { raw },
+    });
 
-    return res
-      .status(200)
-      .json({ message: `Hospital details sent to ${hospital.hospitalRep.email}` });
+    console.log("Email sent to:", hospital.hospitalRep.email);
 
-    res.status(200).json({ message: "Hospital details sent to rep email" });
+    return res.status(200).json({
+      message: `Hospital details sent to ${hospital.hospitalRep.email}`,
+    });
   } catch (err) {
     console.error("Error sending hospital details:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
 
-// Edit hospital details (PATCH)
 const updateHospital = async (req, res) => {
   try {
-    const { hospitalId } = req.params;
+    const { id } = req.params;
     const updates = req.body;
 
-    // Guard against empty updates
     if (!updates || Object.keys(updates).length === 0) {
       return res.status(400).json({ message: "No update fields provided" });
     }
 
+    // Block immutable fields
+    const blockedFields = [
+      "hospitalDetails.code",
+      "isdisabled",
+      "active",
+      "isVerified",
+      "tempLoginCode",
+      "tempLoginExpires",
+    ];
+
+    for (const field of blockedFields) {
+      // Check nested fields safely
+      const value = field.split(".").reduce((obj, key) => obj?.[key], updates);
+      if (value !== undefined && value !== null) {
+        return res
+          .status(401)
+          .json({ message: `Updating ${field} is not allowed` });
+      }
+    }
+
     // Apply updates safely
     const updatedHospital = await Hospitals.findByIdAndUpdate(
-      hospitalId,
+      id,
       { $set: updates },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     );
 
     if (!updatedHospital) {
@@ -482,10 +529,10 @@ const updateHospital = async (req, res) => {
 // Revoke hospital rep access by hospital ID
 const revokeHospitalAdminAccess = async (req, res) => {
   try {
-    const { hospitalId } = req.params;
+    const { Id } = req.params;
 
     const updatedHospital = await Hospitals.findByIdAndUpdate(
-      hospitalId,
+      Id,
       { $set: { "hospitalRep.revokedAccess": true } },
       { new: true, runValidators: true },
     );

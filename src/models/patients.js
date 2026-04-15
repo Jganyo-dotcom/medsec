@@ -41,6 +41,7 @@ const PatientSchema = new mongoose.Schema(
       ref: "HospitalIT",
       required: true,
     },
+    hospitalCode: { type: String, required: true },
     date: { type: Date, required: true },
     time: { type: String, required: true },
     name: { type: String, required: true },
@@ -58,7 +59,6 @@ const PatientSchema = new mongoose.Schema(
     departmentTemplate: {
       type: String,
       enum: ["Medicine", "Obstetrics", "Gynaecology", "Pediatrics", "Surgery"],
-      required: true,
     },
     medicalHistory: { type: String },
 

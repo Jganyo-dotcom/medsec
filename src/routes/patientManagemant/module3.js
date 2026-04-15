@@ -7,8 +7,8 @@ const {
 
 const router = express.Router();
 
-router.post("/order", orderInvestigation);
-router.get("/queue", getInvestigationQueue);
-router.put("/result/:id", enterResult);
+// router.post("/order", orderInvestigation);
+// router.get("/queue", getInvestigationQueue);
+// router.put("/result/:id", enterResult);
 
 module.exports = router;
