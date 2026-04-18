@@ -5,7 +5,9 @@ const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const sgMail = require("@sendgrid/mail");
-
+// controllers/managerController.js
+const Manager = require("../../models/manager/manager");
+const LoginHistory = require("../../models/manager/loginHistoryM");
 const { google } = require("googleapis");
 
 // Configure OAuth2 client once at the top of your server
@@ -412,10 +414,6 @@ const getactiveHospitals = async (req, res) => {
   }
 };
 
-
-
-
-
 const sendHospitalDetails = async (req, res) => {
   try {
     const { hospitalId } = req.params;
@@ -551,6 +549,246 @@ const revokeHospitalAdminAccess = async (req, res) => {
   }
 };
 
+// Get all managers
+const getAllManagers = async (req, res) => {
+  try {
+    const managers = await Manager.find({ role: "manager" });
+
+    if (!managers || managers.length === 0) {
+      return res.status(404).json({ message: "No managers found" });
+    }
+
+    // Return simplified manager info
+    const managerList = managers.map((mgr) => ({
+      id: mgr._id,
+      name: mgr.name,
+      email: mgr.email,
+      role: mgr.role,
+      createdAt: mgr.createdAt,
+    }));
+
+    res.status(200).json({
+      count: managerList.length,
+      managers: managerList,
+    });
+  } catch (err) {
+    console.error("Error fetching managers:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Register a new manager
+const registerManager = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    // Basic validation
+    if (!name || !email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Name, email, and password are required" });
+    }
+
+    // Check if manager already exists
+    const existing = await Manager.findOne({ email });
+    if (existing) {
+      return res
+        .status(409)
+        .json({ message: "Manager with this email already exists" });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create new manager
+    const manager = new Manager({
+      name,
+      email,
+      role: "manager", // default to "manager"
+      password: hashedPassword,
+    });
+
+    await manager.save();
+
+    res.status(201).json({
+      message: "Manager registered successfully",
+      manager: {
+        id: manager._id,
+        name: manager.name,
+        email: manager.email,
+        role: manager.role,
+        createdAt: manager.createdAt,
+      },
+    });
+  } catch (err) {
+    console.error("Error registering manager:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Reset manager password using a temp password
+const resetManagerPassword = async (req, res) => {
+  try {
+    const { email, tempPassword } = req.body;
+
+    if (!email || !tempPassword) {
+      return res
+        .status(400)
+        .json({ message: "Email and temp password are required" });
+    }
+
+    // Find manager by email
+    const manager = await Manager.findOne({ email });
+    if (!manager) {
+      return res.status(404).json({ message: "Manager not found" });
+    }
+
+    // Hash the temp password
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    // Update manager record
+    manager.password = hashedPassword;
+    manager.hasChangedPassword = false; // flag to force change later
+    await manager.save();
+
+    res.status(200).json({
+      message:
+        "Password reset successfully. Manager must change password on next login.",
+      manager: {
+        id: manager._id,
+        name: manager.name,
+        email: manager.email,
+        role: manager.role,
+      },
+    });
+  } catch (err) {
+    console.error("Error resetting manager password:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Login manager and issue JWT
+const loginManager = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Email and password are required" });
+    }
+
+    // Find manager by email
+    const manager = await Manager.findOne({ email });
+    if (!manager) {
+      return res.status(404).json({ message: "Manager not found" });
+    }
+
+    // Compare password
+    const isMatch = await bcrypt.compare(password, manager.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Issue JWT token
+    const token = jwt.sign(
+      { id: manager._id, role: manager.role },
+      process.env.JWT_SECRETE, // make sure you set this in .env
+      { expiresIn: process.env.EXPIRES_IN || "1h" },
+    );
+
+    const now = new Date();
+
+    const who = LoginHistory({
+      staff: manager.id,
+      date: now,
+      time: now.toLocaleTimeString(),
+    });
+
+    who.save();
+
+    // Response
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      manager: {
+        id: manager._id,
+        name: manager.name,
+        email: manager.email,
+        role: manager.role,
+        hasChangedPassword: manager.hasChangedPassword,
+      },
+    });
+  } catch (err) {
+    console.error("Error logging in manager:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Delete a manager by ID
+const deleteManager = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const manager = await Manager.findByIdAndDelete(id);
+
+    if (!manager) {
+      return res.status(404).json({ message: "Manager not found" });
+    }
+
+    res.status(200).json({
+      message: "Manager deleted successfully",
+      manager: {
+        id: manager._id,
+        name: manager.name,
+        email: manager.email,
+      },
+    });
+  } catch (err) {
+    console.error("Error deleting manager:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// controllers/loginHistoryController.js
+
+// Get all login history records
+const getAllLoginHistory = async (req, res) => {
+  try {
+    const history = await LoginHistory.find().populate(
+      "staff",
+      "name email role",
+    );
+
+    if (!history || history.length === 0) {
+      return res.status(404).json({ message: "No login history found" });
+    }
+
+    res.status(200).json({
+      count: history.length,
+      history: history.map((h) => ({
+        id: h._id,
+        staff: h.staff
+          ? {
+              id: h.staff._id,
+              name: h.staff.name,
+              email: h.staff.email,
+              role: h.staff.role,
+            }
+          : null,
+        date: h.date,
+        time: h.time,
+        createdAt: h.createdAt,
+      })),
+    });
+  } catch (err) {
+    console.error("Error fetching login history:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+module.exports = { getAllLoginHistory };
+
 // Get total staff across all hospitals
 // const getTotalStaff = async (req, res) => {
 //   try {
@@ -584,5 +822,11 @@ module.exports = {
   sendHospitalDetails,
   updateHospital,
   revokeHospitalAdminAccess,
+  registerManager,
+  getAllManagers,
+  resetManagerPassword,
+  loginManager,
+  deleteManager,
+  getAllLoginHistory,
   // getTotalStaff,
 };

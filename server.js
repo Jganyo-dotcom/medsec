@@ -17,10 +17,23 @@ const module4 = require("./src/routes/patientManagemant/module4");
 const module5 = require("./src/routes/patientManagemant/module5");
 const staffAccounts = require("./src/routes/it_deparment/staff.routes");
 const morgan = require("morgan");
+// const { createManager } = require("./src/db/admin.setup");
+
+const allowedOrigins = [
+  // "http://127.0.0.1:5500",
+  // "http://127.0.0.1:5501",
+  "https://medsynck.netlify.app",
+];
 
 app.use(
   cors({
-    origin: "http://127.0.0.1:5500", // allow your frontend origin
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
     credentials: true,
   }),
@@ -28,6 +41,7 @@ app.use(
 
 app.use(express.json());
 connection();
+// createManager()
 app.use(morgan("dev"));
 
 // app.get("/", (req, res) => {
