@@ -705,7 +705,7 @@ const loginManager = async (req, res) => {
       time: now.toLocaleTimeString(),
     });
 
-    who.save();
+    
 
     // Response
     res.status(200).json({
@@ -787,7 +787,78 @@ const getAllLoginHistory = async (req, res) => {
   }
 };
 
-module.exports = { getAllLoginHistory };
+async function getProfile(req, res) {
+  try {
+    // req.user is set by your auth middleware after verifying JWT
+    const manager = await Manager.findById(req.user.id).select("-password"); // exclude password
+
+    if (!manager) {
+      return res.status(404).json({ message: "Manager not found." });
+    }
+
+    res.status(200).json({
+      id: manager._id,
+      name: manager.name,
+      email: manager.email,
+      role: manager.role || "Manager",
+    });
+  } catch (err) {
+    console.error("Profile fetch error:", err);
+    res.status(500).json({ message: "Server error while fetching profile." });
+  }
+}
+
+
+
+// POST /api/verify-token
+const verifyToken = async (req, res) => {
+  try {
+    // Extract token from header
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+    if (!token) {
+      return res
+        .status(401)
+        .json({ valid: false, message: "No token provided." });
+    }
+
+    // Verify JWT
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Find manager
+    const manager = await Manager.findById(req.user.id);
+    if (!manager) {
+      return res
+        .status(404)
+        .json({ valid: false, message: "Manager not found." });
+    }
+
+    // Record login event
+    const now = new Date();
+    const loginEvent = new LoginHistory({
+      staff: manager._id,
+      date: now,
+      time: now.toLocaleTimeString(),
+    });
+
+    // Response
+    res.status(200).json({
+      valid: true,
+      message: "Token verified, login successful.",
+      manager: {
+        id: manager._id,
+        name: manager.name,
+        email: manager.email,
+        role: manager.role,
+        hasChangedPassword: manager.hasChangedPassword,
+      },
+    });
+  } catch (err) {
+    console.error("Error verifying token:", err);
+    res
+      .status(401)
+      .json({ valid: false, message: "Invalid or expired token." });
+  }
+};
 
 // Get total staff across all hospitals
 // const getTotalStaff = async (req, res) => {
@@ -828,5 +899,7 @@ module.exports = {
   loginManager,
   deleteManager,
   getAllLoginHistory,
+  getProfile,
+  verifyToken,
   // getTotalStaff,
 };

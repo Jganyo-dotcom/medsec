@@ -18,28 +18,36 @@ const {
   resetManagerPassword,
   deleteManager,
   getAllLoginHistory,
+  getProfile,
 } = require("../../controllers/managers contoller/hospitalCreation");
 const authmiddleware = require("../../middlewears/auth");
 
 const router = express.Router();
 router.get("/managers", authmiddleware, getAllManagers); // get all
+router.get("/me", authmiddleware, getProfile);
 router.post("/register-manager", authmiddleware, registerManager); // register hospital
 router.post("/login-manager", loginManager);
 router.get("/login-history", authmiddleware, getAllLoginHistory); // get all
 router.delete("/delete-manager/:id", authmiddleware, deleteManager);
-router.post("/reset-password",authmiddleware, resetManagerPassword);
-router.post("/register-hospital", registerHospital); // register hospital
+router.post("/reset-password", authmiddleware, resetManagerPassword);
+router.post("/register-hospital", authmiddleware, registerHospital); // register hospital
 router.post("/login-hospital", loginHospital); // login hospital
 router.post("/verify-login", verifyHospitalLogin); //veri hospital
-router.get("/get-hospitals", getAllHospitals); // get all
-router.delete("/delete-hospital/:id", deleteHospitalById); // delete hospital
-router.patch("/disable-hospital/:id", disableHospital); // disable hospital
+router.get("/get-hospitals", authmiddleware, getAllHospitals); // get all
+router.delete("/delete-hospital/:id", authmiddleware, deleteHospitalById); // delete hospital
+router.patch("/disable-hospital/:id", authmiddleware, disableHospital); // disable hospital
 ///////
-router.get("/get-active-hospitals", IsactiveHospital); // to get the inactive hospital
-router.get("/get-inactive-hospitals", getInactiveHospitals); //to get the inactive hospital
-router.get("/send-hospital-details/:hospitalId", sendHospitalDetails);
-router.patch("/hospital-update/:id", updateHospital); // send hospital details to admin
-router.get("/revoke-access/:Id", revokeHospitalAdminAccess); // revoke hospital
+router.get("/get-active-hospitals", authmiddleware, IsactiveHospital); // to get the inactive hospital
+router.get("/get-inactive-hospitals", authmiddleware, getInactiveHospitals); //to get the inactive hospital
+router.get(
+  "/send-hospital-details/:hospitalId",
+  authmiddleware,
+  sendHospitalDetails,
+);
+router.patch("/hospital-update/:id", authmiddleware, updateHospital); // send hospital details to admin
+router.get("/revoke-access/:Id", authmiddleware, revokeHospitalAdminAccess); // revoke hospital
+
+router.post("/verify-token", authmiddleware,); 
 
 //router.get("/total-staff", getTotalStaff);
 
