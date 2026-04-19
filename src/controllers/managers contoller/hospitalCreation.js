@@ -705,8 +705,6 @@ const loginManager = async (req, res) => {
       time: now.toLocaleTimeString(),
     });
 
-    
-
     // Response
     res.status(200).json({
       message: "Login successful",
@@ -808,8 +806,6 @@ async function getProfile(req, res) {
   }
 }
 
-
-
 // POST /api/verify-token
 const verifyToken = async (req, res) => {
   try {
@@ -822,10 +818,11 @@ const verifyToken = async (req, res) => {
     }
 
     // Verify JWT
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRETE);
 
     // Find manager
     const manager = await Manager.findById(req.user.id);
+  
     if (!manager) {
       return res
         .status(404)

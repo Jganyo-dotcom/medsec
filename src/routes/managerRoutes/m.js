@@ -19,6 +19,7 @@ const {
   deleteManager,
   getAllLoginHistory,
   getProfile,
+  verifyToken,
 } = require("../../controllers/managers contoller/hospitalCreation");
 const authmiddleware = require("../../middlewears/auth");
 
@@ -47,7 +48,7 @@ router.get(
 router.patch("/hospital-update/:id", authmiddleware, updateHospital); // send hospital details to admin
 router.get("/revoke-access/:Id", authmiddleware, revokeHospitalAdminAccess); // revoke hospital
 
-router.post("/verify-token", authmiddleware,); 
+router.post("/verify-token", authmiddleware, verifyToken);
 
 //router.get("/total-staff", getTotalStaff);
 
