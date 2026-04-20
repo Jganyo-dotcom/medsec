@@ -20,9 +20,9 @@ const morgan = require("morgan");
 // const { createManager } = require("./src/db/admin.setup");
 
 const allowedOrigins = [
-   "http://127.0.0.1:5500",
-  "http://127.0.0.1:5501",
-  "https://medsynck.netlify.app",
+  // "http://127.0.0.1:5500",
+  // "http://127.0.0.1:5501",
+  "https://medsyncmanager.netlify.app",
 ];
 
 app.use(
