@@ -20,11 +20,15 @@ const {
   getAllLoginHistory,
   getProfile,
   verifyToken,
+  getAllPotentialManagers,
+  approveManager,
 } = require("../../controllers/managers contoller/hospitalCreation");
 const authmiddleware = require("../../middlewears/auth");
 
 const router = express.Router();
 router.get("/managers", authmiddleware, getAllManagers); // get all
+router.get("/pending-managers", authmiddleware, getAllPotentialManagers); // get all
+router.patch("/approve-manager/:id", authmiddleware, approveManager); // get all
 router.get("/me", authmiddleware, getProfile);
 router.post("/register-manager", authmiddleware, registerManager); // register hospital
 router.post("/login-manager", loginManager);

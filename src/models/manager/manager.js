@@ -16,11 +16,15 @@ const managerSchema = new mongoose.Schema(
     role: {
       type: String,
       default: "manager",
-      enum: ["manager", "sub manager"],
+      enum: ["manager", "superior manager"],
     },
     password: {
       type: String,
       required: true,
+    },
+    hasBeenApproved: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true },

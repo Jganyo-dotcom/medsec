@@ -17,11 +17,23 @@ const module4 = require("./src/routes/patientManagemant/module4");
 const module5 = require("./src/routes/patientManagemant/module5");
 const staffAccounts = require("./src/routes/it_deparment/staff.routes");
 const morgan = require("morgan");
-// const { createManager } = require("./src/db/admin.setup");
+const http = require("http");
+const { Server } = require("socket.io"); // <-- capital S
+
+const server = http.createServer(app);
+
+// Create Socket.IO instance
+const io = new Server(server, {
+  cors: {
+    origin: "*", // allow all origins for dev
+    methods: ["GET", "POST"],
+  },
+});
+const { createManager } = require("./src/db/admin.setup");
 
 const allowedOrigins = [
   // "http://127.0.0.1:5500",
-  // "http://127.0.0.1:5501",
+  "http://127.0.0.1:5501",
   "https://medsyncmanager.netlify.app",
 ];
 
@@ -41,12 +53,47 @@ app.use(
 
 app.use(express.json());
 connection();
-// createManager()
+// createManager();
 app.use(morgan("dev"));
 
-// app.get("/", (req, res) => {
-//   res.send("Hello World!");
-// });
+//global variables acceesiible anywhere
+const userSockets = {};
+app.locals.io = io;
+app.locals.userSockets = userSockets;
+const jwt = require("jsonwebtoken");
+
+io.use((socket, next) => {
+  try {
+    const token = socket.handshake.auth.token;
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRETE);
+
+      socket.userId = decoded.id; // attach userId to socket
+      
+      next();
+    } else {
+      console.log("no token");
+      next();
+    }
+  } catch (err) {
+    console.log("Couldn’t validate token");
+    next();
+  }
+});
+
+io.on("connection", (socket) => {
+  console.log("Socket connected:", socket.id, "for user:", socket.userId);
+
+  if (socket.userId) {
+    userSockets[socket.userId] = socket.id; 
+  }
+
+  socket.on("disconnect", () => {
+    delete userSockets[socket.userId];
+    console.log("Socket disconnected:", socket.id);
+  });
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/api", managerRoute);
 app.use("/api/accountControl", itStaffRouteForAccontControl);
@@ -132,6 +179,6 @@ Your Hospital IT System
   }
 });
 
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(` server listening on port ${port}`);
 });

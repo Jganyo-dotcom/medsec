@@ -552,13 +552,47 @@ const revokeHospitalAdminAccess = async (req, res) => {
 // Get all managers
 const getAllManagers = async (req, res) => {
   try {
-    const managers = await Manager.find({ role: "manager" });
+    const managers = await Manager.find({
+      role: "manager",
+      hasBeenApproved: true,
+    });
 
     if (!managers || managers.length === 0) {
       return res.status(404).json({ message: "No managers found" });
     }
 
     // Return simplified manager info
+    const managerList = managers.map((mgr) => ({
+      id: mgr._id,
+      name: mgr.name,
+      email: mgr.email,
+      role: mgr.role,
+      createdAt: mgr.createdAt,
+    }));
+
+    res.status(200).json({
+      count: managerList.length,
+      managers: managerList,
+    });
+  } catch (err) {
+    console.error("Error fetching managers:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Get all managers
+const getAllPotentialManagers = async (req, res) => {
+  try {
+    console.log("hit");
+    const managers = await Manager.find({
+      role: "manager",
+      hasBeenApproved: false,
+    });
+
+    if (!managers || managers.length === 0) {
+      return res.status(404).json({ message: "No managers found" });
+    }
+
     const managerList = managers.map((mgr) => ({
       id: mgr._id,
       name: mgr.name,
@@ -606,12 +640,34 @@ const registerManager = async (req, res) => {
       email,
       role: "manager", // default to "manager"
       password: hashedPassword,
+      hasBeenApproved: false, // optional flag if you want approval workflow
     });
 
     await manager.save();
 
+    // 🔹 Emit event to supervising manager(s)
+    if (req.user && req.user.role === "superior manager") {
+      const userId = req.user.id; // comes from decoded JWT
+      const socketId = req.app.locals.userSockets[userId];
+
+      if (socketId) {
+        console.log("emitted")
+        req.app.locals.io.to(socketId).emit("managerAdded", {
+          manager: {
+            id: manager._id,
+            name: manager.name,
+            email: manager.email,
+            role: manager.role,
+            createdAt: manager.createdAt,
+          },
+        });
+      } else {
+        console.log("No active socket found for supervisor:", userId);
+      }
+    }
+
     res.status(201).json({
-      message: "Manager registered successfully",
+      message: "Manager registered successfully and awaiting concurrence",
       manager: {
         id: manager._id,
         name: manager.name,
@@ -822,7 +878,7 @@ const verifyToken = async (req, res) => {
 
     // Find manager
     const manager = await Manager.findById(req.user.id);
-  
+
     if (!manager) {
       return res
         .status(404)
@@ -854,6 +910,39 @@ const verifyToken = async (req, res) => {
     res
       .status(401)
       .json({ valid: false, message: "Invalid or expired token." });
+  }
+};
+
+// Approve a manager by ID
+const approveManager = async (req, res) => {
+  try {
+    const { id } = req.params; // manager ID from URL
+
+    // Find and update the manager
+    const manager = await Manager.findByIdAndUpdate(
+      id,
+      { hasBeenApproved: true },
+      { new: true }, // return the updated document
+    );
+
+    if (!manager) {
+      return res.status(404).json({ message: "Manager not found" });
+    }
+
+    res.status(200).json({
+      message: "Manager approved successfully",
+      manager: {
+        id: manager._id,
+        name: manager.name,
+        email: manager.email,
+        role: manager.role,
+        hasBeenApproved: manager.hasBeenApproved,
+        updatedAt: manager.updatedAt,
+      },
+    });
+  } catch (err) {
+    console.error("Error approving manager:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -898,5 +987,7 @@ module.exports = {
   getAllLoginHistory,
   getProfile,
   verifyToken,
+  getAllPotentialManagers,
+  approveManager,
   // getTotalStaff,
 };
