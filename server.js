@@ -91,7 +91,7 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     delete userSockets[socket.userId];
-    console.log("Socket disconnected:", socket.id);
+    console.log("Socket disconnectedd:", socket.id);
   });
 });
 
