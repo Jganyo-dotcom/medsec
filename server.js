@@ -29,7 +29,7 @@ const io = new Server(server, {
     methods: ["GET", "POST"],
   },
 });
-const { createManager } = require("./src/db/admin.setup");
+// const { createManager } = require("./src/db/admin.setup");
 
 const allowedOrigins = [
   // "http://127.0.0.1:5500",
