@@ -7,6 +7,11 @@ const managerSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    phone: {
+      type: String,
+      required: true,
+      default:"5555555555"
+    },
     email: {
       type: String,
       required: true,

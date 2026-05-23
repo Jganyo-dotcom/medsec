@@ -32,10 +32,9 @@ const io = new Server(server, {
 // const { createManager } = require("./src/db/admin.setup");
 
 const allowedOrigins = [
-  // "http://127.0.0.1:5500",
   "http://127.0.0.1:5501",
   "https://medsyncmanager.netlify.app",
-  "http://localhost:5174"
+  "http://localhost:5174",
 ];
 
 app.use(
@@ -70,7 +69,7 @@ io.use((socket, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRETE);
 
       socket.userId = decoded.id; // attach userId to socket
-      
+
       next();
     } else {
       console.log("no token");
@@ -86,7 +85,7 @@ io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id, "for user:", socket.userId);
 
   if (socket.userId) {
-    userSockets[socket.userId] = socket.id; 
+    userSockets[socket.userId] = socket.id;
   }
 
   socket.on("disconnect", () => {

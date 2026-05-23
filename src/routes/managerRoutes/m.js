@@ -2,6 +2,7 @@ const express = require("express");
 const {
   registerHospital,
   getAllHospitals,
+  getHospitalById,
   deleteHospitalById,
   disableHospital,
   IsactiveHospital,
@@ -22,25 +23,32 @@ const {
   verifyToken,
   getAllPotentialManagers,
   approveManager,
+  getUser,
+  updateUser,
+  changePassword,
 } = require("../../controllers/managers contoller/hospitalCreation");
 const authmiddleware = require("../../middlewears/auth");
 
 const router = express.Router();
 router.get("/managers", authmiddleware, getAllManagers); // get all
-router.get("/pending-managers", authmiddleware, getAllPotentialManagers); // get all
-router.patch("/approve-manager/:id", authmiddleware, approveManager); // get all
+router.get("/pending-managers", authmiddleware, getAllPotentialManagers);
+router.get("/hospitals/:id", authmiddleware, getHospitalById);
+router.patch("/approve-manager/:id", authmiddleware, approveManager);
 router.get("/me", authmiddleware, getProfile);
-router.post("/register-manager", authmiddleware, registerManager); // register hospital
+router.post("/register-manager", authmiddleware, registerManager);
 router.post("/login-manager", loginManager);
-router.get("/login-history", authmiddleware, getAllLoginHistory); // get all
+router.get("/login-history", authmiddleware, getAllLoginHistory);
 router.delete("/delete-manager/:id", authmiddleware, deleteManager);
 router.post("/reset-password", authmiddleware, resetManagerPassword);
-router.post("/register-hospital", authmiddleware, registerHospital); // register hospital
+router.post("/register-hospital", authmiddleware, registerHospital);
 router.post("/login-hospital", loginHospital); // login hospital
-router.post("/verify-login", verifyHospitalLogin); //veri hospital
+router.post("/verify-login", verifyHospitalLogin);
 router.get("/get-hospitals", authmiddleware, getAllHospitals); // get all
-router.delete("/delete-hospital/:id", authmiddleware, deleteHospitalById); // delete hospital
-router.patch("/disable-hospital/:id", authmiddleware, disableHospital); // disable hospital
+router.get("/manager/settings", authmiddleware, getUser);
+router.patch("/update-manager/settings", authmiddleware, updateUser);
+router.patch("/manager/change-password", authmiddleware, changePassword);
+router.delete("/delete-hospital/:id", authmiddleware, deleteHospitalById);
+router.patch("/disable-hospital/:id", authmiddleware, disableHospital);
 ///////
 router.get("/get-active-hospitals", authmiddleware, IsactiveHospital); // to get the inactive hospital
 router.get("/get-inactive-hospitals", authmiddleware, getInactiveHospitals); //to get the inactive hospital

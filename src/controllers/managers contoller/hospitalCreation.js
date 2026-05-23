@@ -292,6 +292,26 @@ const registerHospital = async (req, res) => {
   }
 };
 
+const getHospitalById = async (req, res) => {
+  try {
+    const { id } = req.params; // hospital ID from URL
+    console.log("hit");
+    const hospital = await Hospitals.findById(id);
+
+    if (!hospital) {
+      return res.status(404).json({ message: "Hospital not found" });
+    }
+
+    return res.status(200).json({
+      message: "Hospital fetched successfully",
+      hospital,
+    });
+  } catch (err) {
+    console.error("Error fetching hospital:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 // Controller to get all hospitals
 const getAllHospitals = async (req, res) => {
   try {
@@ -651,7 +671,7 @@ const registerManager = async (req, res) => {
       const socketId = req.app.locals.userSockets[userId];
 
       if (socketId) {
-        console.log("emitted")
+        console.log("emitted");
         req.app.locals.io.to(socketId).emit("managerAdded", {
           manager: {
             id: manager._id,
@@ -946,6 +966,82 @@ const approveManager = async (req, res) => {
   }
 };
 
+// GET user settings
+const getUser = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await Manager.findById(userId).select("name email phone");
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.status(200).json({ user });
+  } catch (err) {
+    console.error("Error fetching settings:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// UPDATE user settings
+const updateUser = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { name, email, phone } = req.body;
+
+    // Basic validation
+    if (!name || !email || !phone) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Check if email is already in use by another manager
+    const existingEmail = await Manager.findOne({
+      email,
+      _id: { $ne: userId },
+    });
+    if (existingEmail) {
+      return res.status(409).json({ message: "Email already exists" });
+    }
+
+    // Update user
+    const updatedUser = await Manager.findByIdAndUpdate(
+      userId,
+      { name, email, phone },
+      { new: true, runValidators: true },
+    ).select("name email phone role twoFA");
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ user: updatedUser });
+  } catch (err) {
+    console.error("Error updating settings:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// CHANGE password
+const changePassword = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { current, newPassword } = req.body;
+
+    const user = await Manager.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const match = await bcrypt.compare(current, user.password);
+    if (!match)
+      return res.status(400).json({ message: "Current password incorrect" });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (err) {
+    console.error("Error changing password:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 // Get total staff across all hospitals
 // const getTotalStaff = async (req, res) => {
 //   try {
@@ -989,5 +1085,9 @@ module.exports = {
   verifyToken,
   getAllPotentialManagers,
   approveManager,
+  getHospitalById,
+  getUser,
+  updateUser,
+  changePassword,
   // getTotalStaff,
 };
