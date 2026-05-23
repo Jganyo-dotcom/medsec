@@ -228,21 +228,21 @@ const registerHospital = async (req, res) => {
       return res.status(400).json({ message: "Passwords do not match" });
     }
 
-    // Check if hospital already exists
-    const findExistingAccount = await Hospitals.findOne({
-      "hospitalName.contact.email": value.h_email,
-      "hospitalRep.email": value.r_email,
-    });
-
     // Check if hospital address exists
     const findExistingAddress = await Hospitals.findOne({
-      "hospitalDetails.addresse": value.h_addresse,
+      "hospitalDetails.addresse": value.addresse,
     });
-
     if (findExistingAddress) {
-      return res.status(400).json({ message: "Addresse already exists" });
+      return res.status(400).json({ message: "Address already exists" });
     }
 
+    // Check if hospital email or rep email exists
+    const findExistingAccount = await Hospitals.findOne({
+      $or: [
+        { "hospitalDetails.contact.email": value.h_email },
+        { "hospitalRep.email": value.r_email },
+      ],
+    });
     if (findExistingAccount) {
       return res.status(400).json({ message: "Email already exists" });
     }
@@ -251,12 +251,12 @@ const registerHospital = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(value.r_password, salt);
 
-    // Generate unique hospital code with retry
+    // Generate unique hospital code
     let h_code;
     let exists = true;
     while (exists) {
       h_code = await generateHospitalCode(value.h_name, value.addresse);
-      exists = await Hospitals.findOne({ "hospitalName.code": h_code });
+      exists = await Hospitals.findOne({ "hospitalDetails.code": h_code });
     }
 
     // Create new hospital
@@ -288,6 +288,16 @@ const registerHospital = async (req, res) => {
     });
   } catch (err) {
     console.error("Error registering hospital:", err);
+
+    // ✅ Handle duplicate key error
+    if (err.code === 11000) {
+      const field = Object.keys(err.keyPattern)[0];
+      return res.status(400).json({
+        message: `Duplicate value for field: ${field}`,
+        value: err.keyValue[field],
+      });
+    }
+
     return res.status(500).json({ message: "Internal server error" });
   }
 };
