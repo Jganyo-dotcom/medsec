@@ -5,6 +5,7 @@ const {
   getHospitalById,
   deleteHospitalById,
   disableHospital,
+  enableHospital,
   IsactiveHospital,
   getInactiveHospitals,
   sendHospitalDetails,
@@ -49,6 +50,7 @@ router.patch("/update-manager/settings", authmiddleware, updateUser);
 router.patch("/manager/change-password", authmiddleware, changePassword);
 router.delete("/delete-hospital/:id", authmiddleware, deleteHospitalById);
 router.patch("/disable-hospital/:id", authmiddleware, disableHospital);
+router.patch("/enable-hospital/:id", authmiddleware, enableHospital);
 ///////
 router.get("/get-active-hospitals", authmiddleware, IsactiveHospital); // to get the inactive hospital
 router.get("/get-inactive-hospitals", authmiddleware, getInactiveHospitals); //to get the inactive hospital

@@ -391,6 +391,35 @@ const disableHospital = async (req, res) => {
   }
 };
 
+export const enableHospital = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const hospital = await Hospitals.findByIdAndUpdate(
+      id,
+      { isdisabled: false }, // flip back to enabled
+      { new: true }, // return updated document
+    );
+
+    if (!hospital) {
+      return res.status(404).json({ message: "Hospital not found" });
+    }
+
+    return res.status(200).json({
+      message: "Hospital re-enabled successfully",
+      hospital: {
+        id: hospital._id,
+        name: hospital.hospitalDetails?.name,
+        code: hospital.hospitalDetails?.code,
+        isdisabled: hospital.isdisabled,
+      },
+    });
+  } catch (err) {
+    console.error("Error enabling hospital:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 const IsactiveHospital = async (req, res) => {
   try {
     const today = new Date();
@@ -1079,6 +1108,7 @@ module.exports = {
   getAllHospitals,
   deleteHospitalById,
   disableHospital,
+  enableHospital,
   IsactiveHospital,
   getInactiveHospitals,
   getactiveHospitals,
