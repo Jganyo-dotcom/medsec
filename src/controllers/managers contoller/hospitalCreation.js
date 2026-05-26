@@ -391,7 +391,7 @@ const disableHospital = async (req, res) => {
   }
 };
 
-export const enableHospital = async (req, res) => {
+const enableHospital = async (req, res) => {
   try {
     const { id } = req.params;
 
