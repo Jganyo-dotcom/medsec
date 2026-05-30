@@ -27,6 +27,8 @@ const {
   getUser,
   updateUser,
   changePassword,
+  approveManagerCredentials,
+  resetManagerPasswordReset,
 } = require("../../controllers/managers contoller/hospitalCreation");
 const authmiddleware = require("../../middlewears/auth");
 
@@ -35,6 +37,8 @@ router.get("/managers", authmiddleware, getAllManagers); // get all
 router.get("/pending-managers", authmiddleware, getAllPotentialManagers);
 router.get("/hospitals/:id", authmiddleware, getHospitalById);
 router.patch("/approve-manager/:id", authmiddleware, approveManager);
+router.patch("/approve-reset/:id", authmiddleware, approveManagerCredentials);
+router.get("/pending-resets", authmiddleware, resetManagerPasswordReset);
 router.get("/me", authmiddleware, getProfile);
 router.post("/register-manager", authmiddleware, registerManager);
 router.post("/login-manager", loginManager);

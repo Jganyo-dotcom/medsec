@@ -10,7 +10,7 @@ const managerSchema = new mongoose.Schema(
     phone: {
       type: String,
       required: true,
-      default:"5555555555"
+      default: "5555555555",
     },
     email: {
       type: String,
@@ -30,6 +30,11 @@ const managerSchema = new mongoose.Schema(
     hasBeenApproved: {
       type: Boolean,
       default: false,
+    },
+    resetPasswordApproved: {
+      type: String,
+      default: "awaiting",
+      enum: ["awaiting", "done", "N/A"],
     },
   },
   { timestamps: true },

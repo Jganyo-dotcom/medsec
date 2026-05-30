@@ -6,6 +6,7 @@ const HospitalSchema = new mongoose.Schema(
       name: { type: String, required: true },
       code: { type: String, required: true, default: 3, unique: true },
       addresse: { type: String, unique: true, required: true },
+      postalAddress: { type: String, required: true, default:"N/A" },
       contact: {
         phone: { type: String, unique: true, required: true },
         email: { type: String, unique: true, required: true },

@@ -3,6 +3,7 @@ const Joi = require("joi");
 const validateCreateHospital = Joi.object({
   h_name: Joi.string().min(5).required(),
   addresse: Joi.string().min(4).required(),
+  h_postalAdress:Joi.string().min(4).required(),
   h_phone: Joi.string()
     .min(7)
     .max(16)

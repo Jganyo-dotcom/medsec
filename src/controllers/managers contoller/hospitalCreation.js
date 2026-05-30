@@ -210,6 +210,7 @@ const registerHospital = async (req, res) => {
       addresse,
       h_phone,
       h_email,
+      h_postalAdress,
       r_name,
       r_phone,
       r_email,
@@ -265,6 +266,7 @@ const registerHospital = async (req, res) => {
         name: value.h_name,
         code: h_code,
         addresse: value.addresse,
+        postalAddress: value.postalAddress,
         contact: {
           phone: value.h_phone,
           email: value.h_email,
@@ -670,6 +672,36 @@ const getAllPotentialManagers = async (req, res) => {
   }
 };
 
+// Get all managers
+const resetManagerPasswordReset = async (req, res) => {
+  try {
+    const managers = await Manager.find({
+      role: "manager",
+      resetPasswordApproved: "awaiting",
+    });
+
+    if (!managers || managers.length === 0) {
+      return res.status(404).json({ message: "No managers found" });
+    }
+
+    const managerList = managers.map((mgr) => ({
+      id: mgr._id,
+      name: mgr.name,
+      email: mgr.email,
+      role: mgr.role,
+      createdAt: mgr.createdAt,
+    }));
+
+    res.status(200).json({
+      count: managerList.length,
+      managers: managerList,
+    });
+  } catch (err) {
+    console.error("Error fetching managers:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 // Register a new manager
 const registerManager = async (req, res) => {
   try {
@@ -766,9 +798,35 @@ const resetManagerPassword = async (req, res) => {
     manager.hasChangedPassword = false; // flag to force change later
     await manager.save();
 
+    await Manager.findByIdAndUpdate(
+      manager._id,
+      { resetPasswordApproved: "awaiting" },
+      { returnDocument: "after" },
+    );
+
+    // 🔹 Emit event to supervising manager(s)
+    if (req.user && req.user.role === "superior manager") {
+      const userId = req.user.id; // comes from decoded JWT
+      const socketId = req.app.locals.userSockets[userId];
+
+      if (socketId) {
+        console.log("emitted");
+        req.app.locals.io.to(socketId).emit("managerPasswordReset", {
+          manager: {
+            id: manager._id,
+            name: manager.name,
+            email: manager.email,
+            role: manager.role,
+            createdAt: manager.createdAt,
+          },
+        });
+      } else {
+        console.log("No active socket found for supervisor:", userId);
+      }
+    }
+
     res.status(200).json({
-      message:
-        "Password reset successfully. Manager must change password on next login.",
+      message: "Password reset successfully. Awaiting approval.",
       manager: {
         id: manager._id,
         name: manager.name,
@@ -797,6 +855,12 @@ const loginManager = async (req, res) => {
     const manager = await Manager.findOne({ email });
     if (!manager) {
       return res.status(404).json({ message: "Manager not found" });
+    }
+
+    if (manager.resetPasswordApproved === "awaiting") {
+      return res
+        .status(401)
+        .json({ message: "Password was reset but awaiting approval" });
     }
 
     // Compare password
@@ -1005,6 +1069,22 @@ const approveManager = async (req, res) => {
   }
 };
 
+const approveManagerCredentials = async (req, res) => {
+  try {
+    console.log("hi");
+    const id = req.params.id;
+    const manager = await Manager.findByIdAndUpdate(
+      id,
+      { resetPasswordApproved: "done" },
+      { returnDocument: "after" },
+    );
+    return res.status(200).json({ message: "Reset approved" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 // GET user settings
 const getUser = async (req, res) => {
   try {
@@ -1129,5 +1209,7 @@ module.exports = {
   getUser,
   updateUser,
   changePassword,
+  approveManagerCredentials,
+  resetManagerPasswordReset,
   // getTotalStaff,
 };
