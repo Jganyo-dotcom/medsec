@@ -33,7 +33,7 @@ const managerSchema = new mongoose.Schema(
     },
     resetPasswordApproved: {
       type: String,
-      default: "awaiting",
+      default: "N/A",
       enum: ["awaiting", "done", "N/A"],
     },
   },
