@@ -371,6 +371,7 @@ const deleteHospitalById = async (req, res) => {
 const disableHospital = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id
 
     const hospital = await Hospitals.findByIdAndUpdate(
       id,
@@ -401,6 +402,7 @@ const disableHospital = async (req, res) => {
 
 const enableHospital = async (req, res) => {
   try {
+    const userId = req.user.id
     const { id } = req.params;
 
     const hospital = await Hospitals.findByIdAndUpdate(
