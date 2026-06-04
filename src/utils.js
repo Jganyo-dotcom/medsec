@@ -41,4 +41,17 @@ const logAction = async (userId, action, entityId, entityType) => {
   }
 };
 
-module.exports = logAction
+function getSafeFields(entityType) {
+  switch (entityType) {
+    case "Hospital":
+      return "hospitalDetails hospitalRep.name hospitalRep.phone hospitalRep.email";
+    case "User":
+      return "name email role"; // exclude password
+    case "Manager":
+      return "name email department";
+    default:
+      return ""; // no extra fields
+  }
+}
+
+module.exports ={ logAction,getSafeFields}

@@ -10,7 +10,7 @@ const { BrevoClient } = require('@getbrevo/brevo');
 const Manager = require("../../models/manager/manager");
 const LoginHistory = require("../../models/manager/loginHistoryM");
 const { google } = require("googleapis");
-const logAction = require("../../utils");
+const {logAction ,getSafeFields }= require("../../utils");
 const ActionLogs = require("../../models/manager/managerAuditLog")
 
 
@@ -1186,22 +1186,53 @@ const getAllLogs = async (req, res) => {
   try {
     // Fetch all logs, populate the user who performed the action
     const logs = await ActionLogs.find({})
-      .populate("userId", "name email") // only bring back name & email
+      .populate("userId", "name email") // only bring back safe fields
       .sort({ createdAt: -1 });         // newest first
 
-    // Optionally populate entityId dynamically if entityType is set
-    for (const log of logs) {
-      if (log.entityId && log.entityType) {
-        await log.populate({ path: "entityId", model: log.entityType });
-      }
-    }
+    // Populate entityId dynamically but exclude sensitive fields
+// Inside getAllLogs
+for (const log of logs) {
+  if (log.entityId && log.entityType) {
+    await log.populate({
+      path: "entityId",
+      model: log.entityType,              // dynamic model based on entityType
+      select: getSafeFields(log.entityType) // safe fields only
+    });
+  }
+}
 
-    return res.status(200).json(logs);
+// Reframe messages to be more professional
+const formattedLogs = logs.map(log => {
+  // Default hospitalDetails is null unless entityType is Hospital
+  let hospitalDetails = null;
+
+  if (log.entityType === "Hospital" && log.entityId?.hospitalDetails) {
+    hospitalDetails = {
+      name: log.entityId.hospitalDetails.name,
+      code: log.entityId.hospitalDetails.code,
+      address: log.entityId.hospitalDetails.addresse,
+      contact: log.entityId.hospitalDetails.contact
+    };
+  }
+
+  return {
+    _id: log._id,
+    user: log.userId,
+    action: log.action,
+    message: log.message,
+    entityType: log.entityType,
+    createdAt: log.createdAt,
+    hospitalDetails // safely included only if applicable
+  };
+});
+
+    return res.status(200).json(formattedLogs);
   } catch (err) {
     console.error("Error fetching logs:", err.message);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 
 
