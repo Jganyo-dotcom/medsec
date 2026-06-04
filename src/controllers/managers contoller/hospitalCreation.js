@@ -10,7 +10,7 @@ const { BrevoClient } = require('@getbrevo/brevo');
 const Manager = require("../../models/manager/manager");
 const LoginHistory = require("../../models/manager/loginHistoryM");
 const { google } = require("googleapis");
-const {logAction ,getSafeFields }= require("../../utils");
+const {logAction , getSafeFields }= require("../../utils");
 const ActionLogs = require("../../models/manager/managerAuditLog")
 
 
