@@ -486,7 +486,7 @@ const sendHospitalDetails = async (req, res) => {
       return res.status(404).json({ message: "Hospital not found" });
     }
 
-    // Build modern HTML email body (highly recommended over plain text for click links)
+    // Build modern HTML email body
     const emailHtml = `
       <html>
         <body>
@@ -513,35 +513,34 @@ const sendHospitalDetails = async (req, res) => {
       </html>
     `;
 
-    // Initialize Brevo API client configuration
-    let defaultClient = Brevo.ApiClient.instance;
-    let apiKey = defaultClient.authentications['api-key'];
+    // 1. Instantiate the Transactional Emails API directly (Fixes the crash)
+    const apiInstance = new Brevo.TransactionalEmailsApi();
     
-    // Automatically reads the key from your .env file
-    apiKey.apiKey = process.env.BREVO_API_KEY; 
+    // 2. Attach your API key properly using Brevo's new format
+    apiInstance.setApiKey(
+      Brevo.TransactionalEmailsApiApiKeys.apiKey, 
+      process.env.BREVO_API_KEY
+    );
 
-    let apiInstance = new Brevo.TransactionalEmailsApi();
-    let sendSmtpEmail = new Brevo.SendSmtpEmail();
-
-    // Configure your email fields
-    sendSmtpEmail.subject = "Hospital Registration Details";
+    // 3. Configure your updated email fields
+    const sendSmtpEmail = new Brevo.SendSmtpEmail();
+    sendSmtpEmail.subject = "Account registers successfully"; // Updated subject
     sendSmtpEmail.htmlContent = emailHtml;
     
-    // MUST match your verified Brevo account sender email (elikemjjames@gmail.com)
-    sendSmtpEmail.sender = { "name": "ctrl + create team", "email": "elikemjjames@gmail.com" };
+    // Updated Sender Name (Keep your verified elikemjjames@gmail.com email)
+    sendSmtpEmail.sender = { "name": "ctrl create labs", "email": "elikemjjames@gmail.com" };
     sendSmtpEmail.to = [{ "email": hospital.hospitalRep.email, "name": hospital.hospitalRep.name }];
 
-    // Execute HTTP POST send via Brevo API
+    // 4. Send email payload via Brevo HTTP API
     const responseData = await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log("Email sent successfully via Brevo. ID:", responseData.messageId);
+    console.log("Email sent successfully via Brevo. ID:", responseData.body ? responseData.body.messageId : responseData.messageId);
 
     return res.status(200).json({
       message: `Hospital details sent to ${hospital.hospitalRep.email}`,
-      messageId: responseData.messageId
+      messageId: responseData.body ? responseData.body.messageId : responseData.messageId
     });
 
   } catch (err) {
-    // Enhanced error catching to help you see exact API responses in your console
     console.error("Error sending hospital details:", err.response ? err.response.body : err.message);
     return res.status(500).json({ message: "Internal server error" });
   }
