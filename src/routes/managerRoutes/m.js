@@ -59,7 +59,7 @@ router.patch("/enable-hospital/:id", authmiddleware, enableHospital);
 ///////
 router.get("/get-active-hospitals", authmiddleware, IsactiveHospital); // to get the inactive hospital
 router.get("/get-inactive-hospitals", authmiddleware, getInactiveHospitals); //to get the inactive hospital
-router.get("/get-all-logs/:hospitalId",authmiddleware,getAllLogs);// get all logs
+router.get("/get-all-logs",authmiddleware,getAllLogs);// get all logs
 router.get(
   "/send-hospital-details/:hospitalId",
   authmiddleware,
