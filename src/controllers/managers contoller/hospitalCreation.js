@@ -5,6 +5,7 @@ const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const sgMail = require("@sendgrid/mail");
+const Brevo = require('@getbrevo/brevo');
 // controllers/managerController.js
 const Manager = require("../../models/manager/manager");
 const LoginHistory = require("../../models/manager/loginHistoryM");
@@ -485,52 +486,63 @@ const sendHospitalDetails = async (req, res) => {
       return res.status(404).json({ message: "Hospital not found" });
     }
 
-    // Build email body
-    const emailText = `
-Hello ${hospital.hospitalRep.name},
-
-Your hospital has been registered successfully.
-
-Hospital Name: ${hospital.hospitalDetails.name}
-Hospital Code: ${hospital.hospitalDetails.code}
-Address: ${hospital.hospitalDetails.addresse}
-Phone: ${hospital.hospitalDetails.contact.phone}
-Email: ${hospital.hospitalDetails.contact.email}
-
-Rep Name: ${hospital.hospitalRep.name}
-Rep Phone: ${hospital.hospitalRep.phone}
-Rep Email: ${hospital.hospitalRep.email}
-
-Your temporary password is "ctrl+createLabs"
-
-Best regards,
-From ctrl + create team
+    // Build modern HTML email body (highly recommended over plain text for click links)
+    const emailHtml = `
+      <html>
+        <body>
+          <p>Hello ${hospital.hospitalRep.name},</p>
+          <p>Your hospital has been registered successfully.</p>
+          <ul>
+            <li><strong>Hospital Name:</strong> ${hospital.hospitalDetails.name}</li>
+            <li><strong>Hospital Code:</strong> ${hospital.hospitalDetails.code}</li>
+            <li><strong>Address:</strong> ${hospital.hospitalDetails.addresse}</li>
+            <li><strong>Phone:</strong> ${hospital.hospitalDetails.contact.phone}</li>
+            <li><strong>Email:</strong> ${hospital.hospitalDetails.contact.email}</li>
+          </ul>
+          <ul>
+            <li><strong>Rep Name:</strong> ${hospital.hospitalRep.name}</li>
+            <li><strong>Rep Phone:</strong> ${hospital.hospitalRep.phone}</li>
+            <li><strong>Rep Email:</strong> ${hospital.hospitalRep.email}</li>
+          </ul>
+          <p>Your temporary password is <code>"ctrl+createLabs"</code></p>
+          <p>Please click the link below to verify your hospital account:</p>
+          <p><a href="https://netlify.com" target="_blank">Verify Hospital Account</a></p>
+          <br>
+          <p>Best regards,<br>From ctrl + create team</p>
+        </body>
+      </html>
     `;
 
-    // Gmail API requires base64url encoding
-    const raw = Buffer.from(
-      `To: ${hospital.hospitalRep.email}\r\n` +
-        `From: ${process.env.MAIL_USER}\r\n` +
-        `Subject: Hospital Registration Details\r\n\r\n` +
-        emailText,
-    )
-      .toString("base64")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_");
+    // Initialize Brevo API client configuration
+    let defaultClient = Brevo.ApiClient.instance;
+    let apiKey = defaultClient.authentications['api-key'];
+    
+    // Automatically reads the key from your .env file
+    apiKey.apiKey = process.env.BREVO_API_KEY; 
 
-    // Send email
-    await gmail.users.messages.send({
-      userId: "me",
-      requestBody: { raw },
-    });
+    let apiInstance = new Brevo.TransactionalEmailsApi();
+    let sendSmtpEmail = new Brevo.SendSmtpEmail();
 
-    console.log("Email sent to:", hospital.hospitalRep.email);
+    // Configure your email fields
+    sendSmtpEmail.subject = "Hospital Registration Details";
+    sendSmtpEmail.htmlContent = emailHtml;
+    
+    // MUST match your verified Brevo account sender email (elikemjjames@gmail.com)
+    sendSmtpEmail.sender = { "name": "ctrl + create team", "email": "elikemjjames@gmail.com" };
+    sendSmtpEmail.to = [{ "email": hospital.hospitalRep.email, "name": hospital.hospitalRep.name }];
+
+    // Execute HTTP POST send via Brevo API
+    const responseData = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log("Email sent successfully via Brevo. ID:", responseData.messageId);
 
     return res.status(200).json({
       message: `Hospital details sent to ${hospital.hospitalRep.email}`,
+      messageId: responseData.messageId
     });
+
   } catch (err) {
-    console.error("Error sending hospital details:", err);
+    // Enhanced error catching to help you see exact API responses in your console
+    console.error("Error sending hospital details:", err.response ? err.response.body : err.message);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
