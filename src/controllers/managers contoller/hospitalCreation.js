@@ -382,6 +382,8 @@ const disableHospital = async (req, res) => {
       return res.status(404).json({ message: "Hospital not found" });
     }
 
+    await logAction(userId,"SUSPEND_HOSPITAL",id,"Hospital")
+
     return res.status(200).json({
       message: "Hospital disabled successfully",
       hospital: {
@@ -410,6 +412,8 @@ const enableHospital = async (req, res) => {
     if (!hospital) {
       return res.status(404).json({ message: "Hospital not found" });
     }
+
+    await logAction(userId,"ENABLED_HOSPITAL",id,"Hospital")
 
     return res.status(200).json({
       message: "Hospital re-enabled successfully",
@@ -617,6 +621,8 @@ const revokeHospitalAdminAccess = async (req, res) => {
     if (!updatedHospital) {
       return res.status(404).json({ message: "Hospital not found" });
     }
+
+     
 
     res.status(200).json({
       message: "Hospital rep access revoked successfully",
