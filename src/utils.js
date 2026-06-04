@@ -23,7 +23,7 @@ const logAction = async (userId, action, entityId, entityType) => {
 
       case "SUSPEND_HOSPITAL":
         hospital = await Hospital.findById(entityId);
-        message = `${user.name} suspended ${hospital?.hospitalDetails?.name} by revoking admin access`;
+        message = `${user.name} suspended ${hospital?.hospitalDetails?.name} `;
         break;
 
       case "ENABLED_HOSPITAL":
