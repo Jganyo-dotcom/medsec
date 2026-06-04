@@ -35,8 +35,10 @@ const logAction = async (userId, action, entityId, entity) => {
         message = `${user.name} performed ${action}`;
     }
 
-    await ActionLog.create({ userId, action, entityId, entity, message });
+    await ActionLog.create({ userId, action, entityId, entityType, message });
   } catch (err) {
     console.error("Error logging action:", err.message);
   }
 };
+
+module.exports = logAction

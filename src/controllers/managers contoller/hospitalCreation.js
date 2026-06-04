@@ -10,6 +10,8 @@ const { BrevoClient } = require('@getbrevo/brevo');
 const Manager = require("../../models/manager/manager");
 const LoginHistory = require("../../models/manager/loginHistoryM");
 const { google } = require("googleapis");
+const logAction = require("../../utils");
+
 
 // Configure OAuth2 client once at the top of your server
 const oauth2Client = new google.auth.OAuth2(
@@ -482,7 +484,7 @@ const getactiveHospitals = async (req, res) => {
 const sendHospitalDetails = async (req, res) => {
   try {
     const { hospitalId } = req.params;
-
+    const userId = req.user.id
     // Find hospital by ID
     const hospital = await Hospitals.findById(hospitalId);
     if (!hospital) {
@@ -521,7 +523,7 @@ const sendHospitalDetails = async (req, res) => {
 
     // 3. Dispatch directly using the updated namespaced structure
     const response = await brevo.transactionalEmails.sendTransacEmail({
-      subject: "Account registers successfully",
+      subject: "Account registered successfully",
       htmlContent: emailHtml,
       sender: { 
         name: "ctrl create labs", 
@@ -535,6 +537,8 @@ const sendHospitalDetails = async (req, res) => {
 
     // Extract the confirmation messageId from the modern response wrapper
     console.log("Email sent successfully via Brevo. ID:", response.messageId);
+
+    await logAction(userId,"SENT_HOSPITAL_DETAILS",hospitalId,"Hospital")
 
     return res.status(200).json({
       message: `Hospital details sent to ${hospital.hospitalRep.email}`,
@@ -1174,6 +1178,32 @@ const changePassword = async (req, res) => {
   }
 };
 
+
+
+
+const getAllLogs = async (req, res) => {
+  try {
+    // Fetch all logs, populate the user who performed the action
+    const logs = await logAction.find()
+      .populate("userId", "name email") // only bring back name & email
+      .sort({ createdAt: -1 });         // newest first
+
+    // Optionally populate entityId dynamically if entityType is set
+    for (const log of logs) {
+      if (log.entityId && log.entityType) {
+        await log.populate({ path: "entityId", model: log.entityType });
+      }
+    }
+
+    return res.status(200).json(logs);
+  } catch (err) {
+    console.error("Error fetching logs:", err.message);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+
 // Get total staff across all hospitals
 // const getTotalStaff = async (req, res) => {
 //   try {
@@ -1206,6 +1236,7 @@ module.exports = {
   getInactiveHospitals,
   getactiveHospitals,
   sendHospitalDetails,
+  getAllLogs,
   updateHospital,
   revokeHospitalAdminAccess,
   registerManager,
