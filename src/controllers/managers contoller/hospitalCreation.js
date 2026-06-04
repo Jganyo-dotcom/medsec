@@ -11,6 +11,7 @@ const Manager = require("../../models/manager/manager");
 const LoginHistory = require("../../models/manager/loginHistoryM");
 const { google } = require("googleapis");
 const logAction = require("../../utils");
+const ActionLogs = require("../../models/manager/managerAuditLog")
 
 
 // Configure OAuth2 client once at the top of your server
@@ -1184,7 +1185,7 @@ const changePassword = async (req, res) => {
 const getAllLogs = async (req, res) => {
   try {
     // Fetch all logs, populate the user who performed the action
-    const logs = await logAction.find()
+    const logs = await ActionLogs.find({})
       .populate("userId", "name email") // only bring back name & email
       .sort({ createdAt: -1 });         // newest first
 
