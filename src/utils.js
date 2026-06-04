@@ -2,7 +2,7 @@ const User = require("./models/manager/manager");
 const Hospital = require("./models/hospital.schema");
 const ActionLog = require("./models/manager/managerAuditLog");
 
-const logAction = async (userId, action, entityId, entity) => {
+const logAction = async (userId, action, entityId, entityType) => {
   try {
     const user = await User.findById(userId);
     if (!user) throw new Error("User not found");
