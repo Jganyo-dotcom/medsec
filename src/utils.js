@@ -23,46 +23,48 @@ const logAction = async (userId, action, entityId, entityType, path = "Manager")
     }
 
     let message = "";
+    let hospitalSnapshot = null;
+
+    if (entityType === "Hospital") {
+      hospital = await Hospital.findById(entityId);
+      if (hospital) {
+        hospitalSnapshot = {
+          name: hospital.hospitalDetails.name,
+          code: hospital.hospitalDetails.code,
+          address: hospital.hospitalDetails.addresse,
+          phone: hospital.hospitalDetails.contact.phone,
+          email: hospital.hospitalDetails.contact.email
+        };
+      }
+    }
 
     switch (action) {
       case "CREATE_HOSPITAL":
-        hospital = await Hospital.findById(entityId);
-        message = `${actorName} created hospital ${hospital?.hospitalDetails?.name}`;
+        message = `${actorName} created hospital ${hospitalSnapshot?.name}`;
         break;
 
       case "SENT_HOSPITAL_DETAILS":
-        hospital = await Hospital.findById(entityId);
-        message = `${actorName} sent ${hospital?.hospitalDetails?.name} details`;
-        console.log(message)
+        message = `${actorName} sent ${hospitalSnapshot?.name} details`;
         break;
 
       case "SUSPEND_HOSPITAL":
-        hospital = await Hospital.findById(entityId);
-        message = `${actorName} suspended ${hospital?.hospitalDetails?.name}`;
-        console.log(message)
+        message = `${actorName} suspended ${hospitalSnapshot?.name}`;
         break;
 
       case "ENABLED_HOSPITAL":
-        hospital = await Hospital.findById(entityId);
-        message = `${actorName} enabled ${hospital?.hospitalDetails?.name}`;
-        console.log(message)
+        message = `${actorName} enabled ${hospitalSnapshot?.name}`;
         break;
 
       case "ATTEMPTED_TO_VERIFY_ACCOUNT":
-        hospital = await Hospital.findById(entityId);
-        message = `${hospital?.hospitalDetails?.name} initiated the verification process`;
-        console.log(message)
+        message = `${hospitalSnapshot?.name} initiated the verification process`;
         break;
 
       case "ATTEMPTED_TO_VERIFY_ACCOUNT_AGAIN":
-        hospital = await Hospital.findById(entityId);
-        message = `${hospital?.hospitalDetails?.name} attempted the verification process again`;
-        console.log(message)
+        message = `${hospitalSnapshot?.name} attempted the verification process again`;
         break;
 
       default:
         message = `${actorName} performed ${action}`;
-        console.log(message)
     }
 
     await ActionLog.create({
@@ -71,7 +73,8 @@ const logAction = async (userId, action, entityId, entityType, path = "Manager")
       action,
       entityId,
       entityType,
-      message
+      message,
+      hospitalSnapshot // snapshot stored here
     });
   } catch (err) {
     console.error("Error logging action:", err.message);
@@ -91,4 +94,4 @@ function getSafeFields(entityType) {
   }
 }
 
-module.exports ={ logAction,getSafeFields}
+module.exports = { logAction, getSafeFields };
