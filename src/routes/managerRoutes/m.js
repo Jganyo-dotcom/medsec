@@ -70,7 +70,7 @@ router.get(
 router.patch("/hospital-update/:id", authmiddleware,higherAuth, updateHospital); // send hospital details to admin
 router.get("/revoke-access/:Id", authmiddleware,higherAuth, revokeHospitalAdminAccess); // revoke hospital
 
-router.post("/verify-token", authmiddleware,higherAuth, verifyToken);
+router.post("/verify-token", authmiddleware, verifyToken);
 
 //router.get("/total-staff", getTotalStaff);
 

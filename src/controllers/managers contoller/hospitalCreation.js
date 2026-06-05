@@ -125,18 +125,18 @@ const loginHospital = async (req, res) => {
 
 const verifyHospitalLogin = async (req, res) => {
   try {
-    const { hospitalId, code } = req.body;
+    const { email, token } = req.body;
 
-    const hospital = await Hospitals.findById(hospitalId);
+    const hospital = await Hospitals.find({"hospitalDetails.contact.email":email});
     if (!hospital) {
       return res.status(404).json({ message: "Hospital not found" });
     }
 
     if (!hospital.tempLoginCode || Date.now() > hospital.tempLoginExpires) {
-      return res.status(400).json({ message: "Code expired or not set" });
+      return res.status(400).json({ message: "Code expired " });
     }
 
-    if (hospital.tempLoginCode !== code) {
+    if (hospital.tempLoginCode !== token) {
       return res.status(401).json({ message: "Invalid code" });
     }
 
@@ -150,22 +150,22 @@ const verifyHospitalLogin = async (req, res) => {
     await hospital.save();
 
     // Generate JWT token
-    const token = jwt.sign(
-      { hospitalId: hospital._id, role: hospital.hospitalRep.role },
-      process.env.JWT_SECRETE,
-      { expiresIn: process.env.EXPIRES_IN },
-    );
+    // const token = jwt.sign(
+    //   { hospitalId: hospital._id, role: hospital.hospitalRep.role },
+    //   process.env.JWT_SECRETE,
+    //   { expiresIn: process.env.EXPIRES_IN },
+    // );
 
     res.status(200).json({
-      message: "Login successful",
+      message: "verifying successful",
       token,
       hospital: {
         id: hospital._id,
         name: hospital.hospitalDetails.name,
-        code: hospital.hospitalDetails.code,
-        email: hospital.hospitalDetails.contact.email,
-        rep: hospital.hospitalRep.name,
-        role: hospital.hospitalRep.role,
+        // code: hospital.hospitalDetails.code,
+        // email: hospital.hospitalDetails.contact.email,
+        // rep: hospital.hospitalRep.name,
+        // role: hospital.hospitalRep.role,
       },
     });
   } catch (err) {
