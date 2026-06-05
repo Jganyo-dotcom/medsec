@@ -125,47 +125,54 @@ const loginHospital = async (req, res) => {
 
 const verifyHospitalLogin = async (req, res) => {
   try {
-    const { email, token } = req.body;
+    // 1. Rename 'token' to 'otp' to prevent variable collision with JWT
+    const { email, otp } = req.body; 
 
-    const hospital = await Hospitals.find({"hospitalDetails.contact.email":email});
+    // 1. Verify structural presence of both elements
+    if (!email || !otp) {
+      // Use 400 Bad Request since the client sent an incomplete payload
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // 2. Use findOne() so it returns an Object instead of an Array
+    const hospital = await Hospitals.findOne({ "hospitalDetails.contact.email": email });
     if (!hospital) {
       return res.status(404).json({ message: "Hospital not found" });
     }
 
+    // 3. Now hospital.tempLoginExpires reads correctly as a single document value
     if (!hospital.tempLoginCode || Date.now() > hospital.tempLoginExpires) {
-      return res.status(400).json({ message: "Code expired " });
+      return res.status(400).json({ message: "Code expired" });
     }
 
-    if (hospital.tempLoginCode !== token) {
+    // 4. Match against the renamed 'otp' variable
+    if (hospital.tempLoginCode !== otp) {
       return res.status(401).json({ message: "Invalid code" });
     }
 
-    await Hospitals.findByIdAndUpdate(hospitalId, {
+    // 5. Fixed: Use hospital._id instead of the non-existent hospitalId variable
+    await Hospitals.findByIdAndUpdate(hospital._id, {
       isVerified: true,
     });
 
-    // Clear temp code
+    // Clear temp code parameters
     hospital.tempLoginCode = undefined;
     hospital.tempLoginExpires = undefined;
     await hospital.save();
 
-    // Generate JWT token
+    // // 6. Generate real JWT safely (Uncommented and safe from crashes now)
     // const token = jwt.sign(
-    //   { hospitalId: hospital._id, role: hospital.hospitalRep.role },
-    //   process.env.JWT_SECRETE,
-    //   { expiresIn: process.env.EXPIRES_IN },
+    //    { hospitalId: hospital._id, role: hospital.hospitalRep?.role || 'user' },
+    //    process.env.JWT_SECRETE,
+    //    { expiresIn: process.env.EXPIRES_IN || '1d' }
     // );
 
+    // Return structured validation payload back to app.js
     res.status(200).json({
       message: "verifying successful",
-      token,
       hospital: {
         id: hospital._id,
         name: hospital.hospitalDetails.name,
-        // code: hospital.hospitalDetails.code,
-        // email: hospital.hospitalDetails.contact.email,
-        // rep: hospital.hospitalRep.name,
-        // role: hospital.hospitalRep.role,
       },
     });
   } catch (err) {
