@@ -11,8 +11,30 @@ const CheckroleonAll = (req, res, next) => {
   // next();
 };
 
-const OnlyManager = (req, res, next) => {
-  if (req.user.role !== "Manager") {
+const higherAuth = (req, res, next) => {
+  // Allowed roles
+  const allowedRoles = ["Manager", "superior manager","EMR Manager"];
+
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({ message: "Unauthorized access" });
+  }
+
+  next();
+};
+
+const higherAuth2 = (req, res, next) => {
+  // Allowed roles
+  const allowedRoles = ["Manager", "superior manager"];
+
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({ message: "Unauthorized access" });
+  }
+
+  next();
+};
+
+const OnlySuperiorManager = (req, res, next) => {
+  if (req.user.role !== "superior manager") {
     return res.status(403).json({ message: "Unauthorized access" });
   }
   next();
@@ -29,4 +51,4 @@ const checkroleonAll = (req, res, next) => {
   next();
 };
 
-module.exports = { CheckroleonAll, checkroleonAll, OnlyManager };
+module.exports = { CheckroleonAll, checkroleonAll, higherAuth,OnlySuperiorManager ,higherAuth2};

@@ -14,28 +14,28 @@ const {logAction , getSafeFields }= require("../../utils");
 const ActionLogs = require("../../models/manager/managerAuditLog")
 
 
-// Configure OAuth2 client once at the top of your server
-const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI,
-);
+// // Configure OAuth2 client once at the top of your server
+// const oauth2Client = new google.auth.OAuth2(
+//   process.env.GOOGLE_CLIENT_ID,
+//   process.env.GOOGLE_CLIENT_SECRET,
+//   process.env.GOOGLE_REDIRECT_URI,
+// );
 
-// Use the refresh token so Google can auto-refresh access tokens
-oauth2Client.setCredentials({
-  refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
-});
+// // Use the refresh token so Google can auto-refresh access tokens
+// oauth2Client.setCredentials({
+//   refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+// });
 
-const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+// const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+
 
 const loginHospital = async (req, res) => {
   try {
     const { identifier, password } = req.body;
 
     if (!identifier || !password) {
-      return res
-        .status(400)
-        .json({ message: "Identifier and password are required" });
+      return res.status(400).json({ message: "Identifier and password are required" });
     }
 
     const hospital = await Hospitals.findOne({
@@ -49,95 +49,79 @@ const loginHospital = async (req, res) => {
       return res.status(404).json({ message: "Hospital not found" });
     }
 
-    if (hospital.isdisabled || hospital.hospitalRep.revokedAccess) {
-      return res
-        .status(403)
-        .json({ message: "Access revoked or hospital disabled" });
+    if (hospital.isVerified === true) {
+      return res.status(400).json({ message: "This hospital has already been verified" });
     }
 
-    const isMatch = await bcrypt.compare(
-      password,
-      hospital.hospitalRep.password,
-    );
+    if (hospital.isdisabled || hospital.hospitalRep.revokedAccess) {
+      return res.status(403).json({ message: "Access revoked or hospital disabled" });
+    }
+
+    const isMatch = await bcrypt.compare(password, hospital.hospitalRep.password);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
-    }
-
-    if (hospital.isVerified) {
-      const token = jwt.sign(
-        {
-          hospitalId: hospital._id,
-          role: hospital.hospitalRep.role,
-          hospialCode: hospital.hospitalDetails.role,
-        },
-        process.env.JWT_SECRETE,
-        { expiresIn: process.env.EXPIRES_IN },
-      );
-
-      return res.status(200).json({
-        message: "Login successful",
-        token,
-        hospital: {
-          id: hospital._id,
-          name: hospital.hospitalDetails.name,
-          code: hospital.hospitalDetails.code,
-          email: hospital.hospitalDetails.contact.email,
-          rep: hospital.hospitalRep.name,
-          role: hospital.hospitalRep.role,
-          isVerified: hospital.isVerified,
-        },
-      });
     }
 
     // Generate temporary code (6 digits)
     const tempCode = crypto.randomInt(100000, 999999).toString();
 
-    // Save temp code with short expiry (e.g. 5 minutes)
+    // Save temp code with short expiry (5 minutes)
     hospital.tempLoginCode = tempCode;
     hospital.tempLoginExpires = Date.now() + 5 * 60 * 1000;
     await hospital.save();
 
-    // Build email body
-    const emailText = `Hello ${hospital.hospitalRep.name},
+    // Build professional HTML email body
+    const emailHtml = `
+      <html>
+        <body style="font-family: Arial, sans-serif; color: #333;">
+          <p>Dear ${hospital.hospitalRep.name},</p>
+          <p>We received a login request for <strong>${hospital.hospitalDetails.name}</strong>.</p>
+          <p>Your temporary login code is:</p>
+          <h2 style="color: #2c3e50; letter-spacing: 2px;">${tempCode}</h2>
+          <p>This code will expire in <strong>5 minutes</strong>.</p>
+          <p>If you did not initiate this request, please contact our support team immediately at 
+          <a href="mailto:elikemejay@gmail.com">elikemejay@gmail.com</a>.</p>
+          <br>
+          <p>Best regards,<br>
+          <strong>Ctrl Create Labs Team</strong></p>
+        </body>
+      </html>
+    `;
 
-Your temporary login code is: ${tempCode}
-It expires in 5 minutes.
+    // Initialize Brevo client
+    const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
 
-If you didn’t authorise this please contact elikemejay@gmail.com
-
-Best regards,
-Attendance System`;
-
-    // Gmail requires base64url encoding
-    const raw = Buffer.from(
-      `To: ${hospital.hospitalDetails.contact.email}\r\n` +
-        `From: ${process.env.MAIL_USER}\r\n` +
-        `Subject: Your Hospital Login Code\r\n\r\n` +
-        emailText,
-    )
-      .toString("base64")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_");
-
-    await gmail.users.messages.send({
-      userId: "me",
-      requestBody: { raw },
+    // Send transactional email
+    const response = await brevo.transactionalEmails.sendTransacEmail({
+      subject: "Temporary Login Code - Ctrl Create Labs",
+      htmlContent: emailHtml,
+      sender: {
+        name: "Ctrl Create Labs",
+        email: process.env.MAIL_USER
+      },
+      to: [{
+        email: hospital.hospitalDetails.contact.email,
+        name: hospital.hospitalRep.name
+      }]
     });
 
-    console.log(`Email sent to ${hospital.hospitalDetails.contact.email}`);
+    console.log("Email sent successfully via Brevo. ID:", response.messageId);
 
-    res.status(200).json({
-      message: "Temporary code sent to hospital email",
+    return res.status(200).json({
+      message: "Temporary login code sent to hospital email",
       hospital: {
         id: hospital._id,
         isVerified: hospital.isVerified,
       },
+      messageId: response.messageId
     });
+
   } catch (err) {
-    console.error("Error logging in hospital:", err);
+    console.error("Error logging in hospital:", err.response?.body || err.message);
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 const verifyHospitalLogin = async (req, res) => {
   try {
