@@ -374,7 +374,7 @@ const disableHospital = async (req, res) => {
     const hospital = await Hospitals.findByIdAndUpdate(
       id,
       { isdisabled: true },
-      { new: true }, // return updated document
+      { returnDocument: "after" }, // return updated document
     );
 
     if (!hospital) {
@@ -406,7 +406,7 @@ const enableHospital = async (req, res) => {
     const hospital = await Hospitals.findByIdAndUpdate(
       id,
       { isdisabled: false }, // flip back to enabled
-      { new: true }, // return updated document
+      { returnDocument: "after" }, // return updated document
     );
 
     if (!hospital) {
@@ -615,7 +615,7 @@ const revokeHospitalAdminAccess = async (req, res) => {
     const updatedHospital = await Hospitals.findByIdAndUpdate(
       Id,
       { $set: { "hospitalRep.revokedAccess": true } },
-      { new: true, runValidators: true },
+      {returnDocument: "after", runValidators: true },
     );
 
     if (!updatedHospital) {
@@ -1069,7 +1069,7 @@ const approveManager = async (req, res) => {
     const manager = await Manager.findByIdAndUpdate(
       id,
       { hasBeenApproved: true },
-      { new: true }, // return the updated document
+      { returnDocument: "after" }, // return the updated document
     );
 
     if (!manager) {
@@ -1148,7 +1148,7 @@ const updateUser = async (req, res) => {
     const updatedUser = await Manager.findByIdAndUpdate(
       userId,
       { name, email, phone },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     ).select("name email phone role twoFA");
 
     if (!updatedUser) {
