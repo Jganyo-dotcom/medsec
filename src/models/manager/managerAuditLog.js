@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
 
 const actionLogSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "Manager" }, // who did the action
+  userId: { type: mongoose.Schema.Types.ObjectId,}, // who did the action
+  path:{type:String, enum:["Manager","Hospital"]},
   action: { type: String, required: true },                      // e.g. CREATE_HOSPITAL                     // e.g. "Hospital", "Login"
   message: { type: String, required: true },                     // human-readable message
   entityId: { type: mongoose.Schema.Types.ObjectId },            // reference ID if applicable

@@ -2,40 +2,71 @@ const User = require("./models/manager/manager");
 const Hospital = require("./models/hospital.schema");
 const ActionLog = require("./models/manager/managerAuditLog");
 
-const logAction = async (userId, action, entityId, entityType) => {
+const logAction = async (userId, action, entityId, entityType, path = "Manager") => {
   try {
-    const user = await User.findById(userId);
-    if (!user) throw new Error("User not found");
+    let actorName = "";
+    let actorEmail = "";
+    let hospital;
+
+    if (path === "Hospital") {
+      // Actor is a hospital
+      hospital = await Hospital.findById(userId);
+      if (!hospital) throw new Error("Hospital not found");
+      actorName = hospital.hospitalRep.name;
+      actorEmail = hospital.hospitalRep.email;
+    } else {
+      // Actor is a manager/user
+      const user = await User.findById(userId);
+      if (!user) throw new Error("User not found");
+      actorName = user.name;
+      actorEmail = user.email;
+    }
 
     let message = "";
-    let hospital;
 
     switch (action) {
       case "CREATE_HOSPITAL":
         hospital = await Hospital.findById(entityId);
-        message = `${user.name} created hospital ${hospital?.hospitalDetails?.name}`;
+        message = `${actorName} created hospital ${hospital?.hospitalDetails?.name}`;
         break;
 
       case "SENT_HOSPITAL_DETAILS":
         hospital = await Hospital.findById(entityId);
-        message = `${user.name} sent ${hospital?.hospitalDetails?.name} details`;
+        message = `${actorName} sent ${hospital?.hospitalDetails?.name} details`;
         break;
 
       case "SUSPEND_HOSPITAL":
         hospital = await Hospital.findById(entityId);
-        message = `${user.name} suspended ${hospital?.hospitalDetails?.name} `;
+        message = `${actorName} suspended ${hospital?.hospitalDetails?.name}`;
         break;
 
       case "ENABLED_HOSPITAL":
         hospital = await Hospital.findById(entityId);
-        message = `${user.name} enabled ${hospital?.hospitalDetails?.name}`;
+        message = `${actorName} enabled ${hospital?.hospitalDetails?.name}`;
+        break;
+
+      case "ATTEMPTED_TO_VERIFY_ACCOUNT":
+        hospital = await Hospital.findById(entityId);
+        message = `${hospital?.hospitalDetails?.name} initiated the verification process`;
+        break;
+
+      case "ATTEMPTED_TO_VERIFY_ACCOUNT_AGAIN":
+        hospital = await Hospital.findById(entityId);
+        message = `${hospital?.hospitalDetails?.name} attempted the verification process again`;
         break;
 
       default:
-        message = `${user.name} performed ${action}`;
+        message = `${actorName} performed ${action}`;
     }
 
-    await ActionLog.create({ userId, action, entityId, entityType, message });
+    await ActionLog.create({
+      userId,
+      path,
+      action,
+      entityId,
+      entityType,
+      message
+    });
   } catch (err) {
     console.error("Error logging action:", err.message);
   }

@@ -50,6 +50,7 @@ const loginHospital = async (req, res) => {
     }
 
     if (hospital.isVerified === true) {
+      await logAction(hospital._id,"ATTEMPTED_TO_VERIFY_ACCOUNT_AGAIN",hospital._id,"Hospital","Hospital")
       return res.status(400).json({ message: "This hospital has already been verified" });
     }
 
@@ -61,6 +62,8 @@ const loginHospital = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
+
+    await logAction(hospital._id,"ATTEMPTED_TO_VERIFY_ACCOUNT",hospital._id,"Hospital","Hospital")
 
     // Generate temporary code (6 digits)
     const tempCode = crypto.randomInt(100000, 999999).toString();
@@ -1186,7 +1189,7 @@ const getAllLogs = async (req, res) => {
     const { date } = req.query;
     let queryFilter = {};
 
-    // If the frontend sends a date filter, create a 24-hour MongoDB date range query
+    // Optional date filter
     if (date) {
       const startOfDay = new Date(date);
       startOfDay.setUTCHours(0, 0, 0, 0);
@@ -1194,34 +1197,43 @@ const getAllLogs = async (req, res) => {
       const endOfDay = new Date(date);
       endOfDay.setUTCHours(23, 59, 59, 999);
 
-      queryFilter.createdAt = {
-        $gte: startOfDay,
-        $lte: endOfDay
-      };
+      queryFilter.createdAt = { $gte: startOfDay, $lte: endOfDay };
     }
 
-    // Pass the date filter directly into the .find() method
-    const logs = await ActionLogs.find(queryFilter)
-      .populate("userId", "name email") // brings back safe user fields
-      .sort({ createdAt: -1 });         // newest logs first
+    // Fetch logs without populating yet
+    const logs = await ActionLog.find(queryFilter).sort({ createdAt: -1 });
 
-    // Populate entityId dynamically but exclude sensitive fields
+    // Populate userId dynamically based on path
     for (const log of logs) {
+      if (log.userId && log.path) {
+        if (log.path === "Manager") {
+          await log.populate({
+            path: "userId",
+            model: "Manager",
+            select: "name email department"
+          });
+        } else if (log.path === "Hospital") {
+          await log.populate({
+            path: "userId",
+            model: "Hospital",
+            select: "hospitalRep.name hospitalRep.email hospitalRep.phone"
+          });
+        }
+      }
+
+      // Populate entityId dynamically
       if (log.entityId && log.entityType) {
         await log.populate({
           path: "entityId",
-          model: log.entityType,              // dynamic model based on entityType
-          select: getSafeFields(log.entityType) // safe fields only
+          model: log.entityType,
+          select: getSafeFields(log.entityType)
         });
       }
     }
 
-    // Reframe messages to be more professional
+    // Format logs for response
     const formattedLogs = logs.map(log => {
-      // Default hospitalDetails is null unless entityType is Hospital
       let hospitalDetails = null;
-
-      // Note: Fixed a small typo from your original schema field 'addresse' to match your previous sample layout
       if (log.entityType === "Hospital" && log.entityId?.hospitalDetails) {
         hospitalDetails = {
           name: log.entityId.hospitalDetails.name,
@@ -1233,12 +1245,12 @@ const getAllLogs = async (req, res) => {
 
       return {
         _id: log._id,
-        user: log.userId,
+        user: log.userId, // populated Manager or Hospital rep
         action: log.action,
         message: log.message,
         entityType: log.entityType,
         createdAt: log.createdAt,
-        hospitalDetails // safely included only if applicable
+        hospitalDetails
       };
     });
 
@@ -1248,6 +1260,8 @@ const getAllLogs = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+
 
 
 
