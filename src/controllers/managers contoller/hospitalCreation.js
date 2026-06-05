@@ -1201,6 +1201,7 @@ const getAllLogs = async (req, res) => {
     }
 
     // Fetch logs without populating yet
+
     const logs = await ActionLogs.find(queryFilter).sort({ createdAt: -1 });
 
     // Populate userId dynamically based on path
