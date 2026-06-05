@@ -33,30 +33,36 @@ const logAction = async (userId, action, entityId, entityType, path = "Manager")
       case "SENT_HOSPITAL_DETAILS":
         hospital = await Hospital.findById(entityId);
         message = `${actorName} sent ${hospital?.hospitalDetails?.name} details`;
+        console.log(message)
         break;
 
       case "SUSPEND_HOSPITAL":
         hospital = await Hospital.findById(entityId);
         message = `${actorName} suspended ${hospital?.hospitalDetails?.name}`;
+        console.log(message)
         break;
 
       case "ENABLED_HOSPITAL":
         hospital = await Hospital.findById(entityId);
         message = `${actorName} enabled ${hospital?.hospitalDetails?.name}`;
+        console.log(message)
         break;
 
       case "ATTEMPTED_TO_VERIFY_ACCOUNT":
         hospital = await Hospital.findById(entityId);
         message = `${hospital?.hospitalDetails?.name} initiated the verification process`;
+        console.log(message)
         break;
 
       case "ATTEMPTED_TO_VERIFY_ACCOUNT_AGAIN":
         hospital = await Hospital.findById(entityId);
         message = `${hospital?.hospitalDetails?.name} attempted the verification process again`;
+        console.log(message)
         break;
 
       default:
         message = `${actorName} performed ${action}`;
+        console.log(message)
     }
 
     await ActionLog.create({
