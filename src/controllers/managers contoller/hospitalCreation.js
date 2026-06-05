@@ -1200,9 +1200,10 @@ const getAllLogs = async (req, res) => {
       queryFilter.createdAt = { $gte: startOfDay, $lte: endOfDay };
     }
 
+    // Fetch logs without populating yet
     const logs = await ActionLogs.find(queryFilter).sort({ createdAt: -1 });
 
-    // Populate userId dynamically
+    // Populate userId dynamically based on path
     for (const log of logs) {
       if (log.userId && log.path) {
         if (log.path === "Manager") {
@@ -1220,12 +1221,12 @@ const getAllLogs = async (req, res) => {
         }
       }
 
-      // Fallback: only populate entityId if snapshot is missing
-      if (!log.hospitalSnapshot && log.entityId && log.entityType === "Hospital") {
+      // Populate entityId dynamically
+      if (log.entityId && log.entityType) {
         await log.populate({
           path: "entityId",
-          model: "Hospital",
-          select: "hospitalDetails hospitalRep.name hospitalRep.phone hospitalRep.email"
+          model: log.entityType,
+          select: getSafeFields(log.entityType)
         });
       }
     }
@@ -1233,26 +1234,18 @@ const getAllLogs = async (req, res) => {
     // Format logs for response
     const formattedLogs = logs.map(log => {
       let hospitalDetails = null;
-
-      if (log.entityType === "Hospital") {
-        if (log.hospitalSnapshot) {
-          // Prefer snapshot for new logs
-          hospitalDetails = log.hospitalSnapshot;
-        } else if (log.entityId?.hospitalDetails) {
-          // Fallback for old logs
-          hospitalDetails = {
-            name: log.entityId.hospitalDetails.name,
-            code: log.entityId.hospitalDetails.code,
-            address: log.entityId.hospitalDetails.addresse,
-            phone: log.entityId.hospitalDetails.contact.phone,
-            email: log.entityId.hospitalDetails.contact.email
-          };
-        }
+      if (log.entityType === "Hospital" && log.entityId?.hospitalDetails) {
+        hospitalDetails = {
+          name: log.entityId.hospitalDetails.name,
+          code: log.entityId.hospitalDetails.code,
+          address: log.entityId.hospitalDetails.address || log.entityId.hospitalDetails.addresse,
+          contact: log.entityId.hospitalDetails.contact
+        };
       }
 
       return {
         _id: log._id,
-        user: log.userId,
+        user: log.userId, // populated Manager or Hospital rep
         action: log.action,
         message: log.message,
         entityType: log.entityType,
@@ -1267,7 +1260,6 @@ const getAllLogs = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 
 
