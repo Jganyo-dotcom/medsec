@@ -215,7 +215,7 @@ const registerHospital = async (req, res) => {
       r_password,
       r_confirm_password,
     } = req.body;
-
+    const userId = req.user.id
     // Validate input
     const { error, value } = validateCreateHospital.validate(req.body);
     if (error) {
@@ -280,7 +280,11 @@ const registerHospital = async (req, res) => {
       hasChangedPassword: false,
     });
 
+    
+
     await newHospital.save();
+
+    await logAction(userId,"CREATED_HOSPITAL",newHospital._id,"Hospital")
 
     return res.status(201).json({
       message: "Hospital registered successfully",

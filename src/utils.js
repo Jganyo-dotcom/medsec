@@ -60,6 +60,12 @@ const logAction = async (userId, action, entityId, entityType, path = "Manager")
         console.log(message)
         break;
 
+      case "CREATED_HOSPITAL":
+        hospital = await Hospital.findById(entityId);
+        message = `${actorName} created  ${hospital?.hospitalDetails?.name}`;
+        console.log(message)
+        break;
+
       default:
         message = `${actorName} performed ${action}`;
         console.log(message)
