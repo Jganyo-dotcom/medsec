@@ -97,7 +97,7 @@ const loginHospital = async (req, res) => {
       htmlContent: emailHtml,
       sender: {
         name: "Ctrl Create Labs",
-        email: process.env.MAIL_USER
+        email: "elikemjjames@gmail.com"
       },
       to: [{
         email: hospital.hospitalDetails.contact.email,
