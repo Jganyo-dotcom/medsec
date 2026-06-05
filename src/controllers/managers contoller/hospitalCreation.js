@@ -509,7 +509,7 @@ const sendHospitalDetails = async (req, res) => {
           </ul>
           <p>Your temporary password is <code>"ctrl+createLabs"</code></p>
           <p>Please click the link below to verify your hospital account:</p>
-          <p><a href="https://netlify.com" target="_blank">Verify Hospital Account</a></p>
+          <p><a href="https://verifymistvault.netlify.app" target="_blank">Verify Hospital Account</a></p>
           <br>
           <p>Best regards,<br>From ctrl + create team</p>
         </body>
