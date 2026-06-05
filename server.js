@@ -32,6 +32,7 @@ const io = new Server(server, {
 // const { createManager } = require("./src/db/admin.setup");
 
 const allowedOrigins = [
+  "https://verifymistvault.netlify.app",
   "https://mistvault.netlify.app",
   "https://medsyncmanager.netlify.app",
   "http://localhost:5174",
