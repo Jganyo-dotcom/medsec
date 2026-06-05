@@ -1201,19 +1201,21 @@ const getAllLogs = async (req, res) => {
     }
 
     // Fetch logs without populating yet
-
     const logs = await ActionLogs.find(queryFilter).sort({ createdAt: -1 });
 
-    // Populate userId dynamically based on path
+    // Populate userId dynamically
     for (const log of logs) {
-      if (log.userId && log.path) {
-        if (log.path === "Manager") {
+      if (log.userId) {
+        // FORCE FIX: If path is empty, look it up from the "Manager" collection
+        const determinedPath = log.path || "Manager";
+
+        if (determinedPath === "Manager") {
           await log.populate({
             path: "userId",
             model: "Manager",
             select: "name email department"
           });
-        } else if (log.path === "Hospital") {
+        } else if (determinedPath === "Hospital") {
           await log.populate({
             path: "userId",
             model: "Hospital",
@@ -1244,9 +1246,17 @@ const getAllLogs = async (req, res) => {
         };
       }
 
+      // Safe structure cleanup so React never encounters a raw string ID or undefined fields
+      let userData = log.userId;
+      
+      if (typeof userData === "string" || !userData) {
+        // If the ID wasn't found in the database, fallback gracefully
+        userData = { name: "System Administrator", email: "admin@medsec.com" };
+      }
+
       return {
         _id: log._id,
-        user: log.userId, // populated Manager or Hospital rep
+        user: userData, 
         action: log.action,
         message: log.message,
         entityType: log.entityType,
