@@ -1192,47 +1192,64 @@ const changePassword = async (req, res) => {
 
 const getAllLogs = async (req, res) => {
   try {
-    // Fetch all logs, populate the user who performed the action
-    const logs = await ActionLogs.find({})
-      .populate("userId", "name email") // only bring back safe fields
-      .sort({ createdAt: -1 });         // newest first
+    const { date } = req.query;
+    let queryFilter = {};
+
+    // If the frontend sends a date filter, create a 24-hour MongoDB date range query
+    if (date) {
+      const startOfDay = new Date(date);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+
+      const endOfDay = new Date(date);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      queryFilter.createdAt = {
+        $gte: startOfDay,
+        $lte: endOfDay
+      };
+    }
+
+    // Pass the date filter directly into the .find() method
+    const logs = await ActionLogs.find(queryFilter)
+      .populate("userId", "name email") // brings back safe user fields
+      .sort({ createdAt: -1 });         // newest logs first
 
     // Populate entityId dynamically but exclude sensitive fields
-// Inside getAllLogs
-for (const log of logs) {
-  if (log.entityId && log.entityType) {
-    await log.populate({
-      path: "entityId",
-      model: log.entityType,              // dynamic model based on entityType
-      select: getSafeFields(log.entityType) // safe fields only
+    for (const log of logs) {
+      if (log.entityId && log.entityType) {
+        await log.populate({
+          path: "entityId",
+          model: log.entityType,              // dynamic model based on entityType
+          select: getSafeFields(log.entityType) // safe fields only
+        });
+      }
+    }
+
+    // Reframe messages to be more professional
+    const formattedLogs = logs.map(log => {
+      // Default hospitalDetails is null unless entityType is Hospital
+      let hospitalDetails = null;
+
+      // Note: Fixed a small typo from your original schema field 'addresse' to match your previous sample layout
+      if (log.entityType === "Hospital" && log.entityId?.hospitalDetails) {
+        hospitalDetails = {
+          name: log.entityId.hospitalDetails.name,
+          code: log.entityId.hospitalDetails.code,
+          address: log.entityId.hospitalDetails.address || log.entityId.hospitalDetails.addresse,
+          contact: log.entityId.hospitalDetails.contact
+        };
+      }
+
+      return {
+        _id: log._id,
+        user: log.userId,
+        action: log.action,
+        message: log.message,
+        entityType: log.entityType,
+        createdAt: log.createdAt,
+        hospitalDetails // safely included only if applicable
+      };
     });
-  }
-}
-
-// Reframe messages to be more professional
-const formattedLogs = logs.map(log => {
-  // Default hospitalDetails is null unless entityType is Hospital
-  let hospitalDetails = null;
-
-  if (log.entityType === "Hospital" && log.entityId?.hospitalDetails) {
-    hospitalDetails = {
-      name: log.entityId.hospitalDetails.name,
-      code: log.entityId.hospitalDetails.code,
-      address: log.entityId.hospitalDetails.addresse,
-      contact: log.entityId.hospitalDetails.contact
-    };
-  }
-
-  return {
-    _id: log._id,
-    user: log.userId,
-    action: log.action,
-    message: log.message,
-    entityType: log.entityType,
-    createdAt: log.createdAt,
-    hospitalDetails // safely included only if applicable
-  };
-});
 
     return res.status(200).json(formattedLogs);
   } catch (err) {
