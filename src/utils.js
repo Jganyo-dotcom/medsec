@@ -60,6 +60,12 @@ const logAction = async (userId, action, entityId, entityType, path = "Manager")
         console.log(message)
         break;
 
+      case "VERIFIED_ACCOUNT":
+        hospital = await Hospital.findById(entityId);
+        message = `${hospital?.hospitalDetails?.name} varified their hospital`;
+        console.log(message)
+        break;
+
       case "CREATED_HOSPITAL":
         hospital = await Hospital.findById(entityId);
         message = `${actorName} created  ${hospital?.hospitalDetails?.name}`;

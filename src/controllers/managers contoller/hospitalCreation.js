@@ -5,14 +5,13 @@ const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const sgMail = require("@sendgrid/mail");
-const { BrevoClient } = require('@getbrevo/brevo');
+const { BrevoClient } = require("@getbrevo/brevo");
 // controllers/managerController.js
 const Manager = require("../../models/manager/manager");
 const LoginHistory = require("../../models/manager/loginHistoryM");
 const { google } = require("googleapis");
-const {logAction , getSafeFields }= require("../../utils");
-const ActionLogs = require("../../models/manager/managerAuditLog")
-
+const { logAction, getSafeFields } = require("../../utils");
+const ActionLogs = require("../../models/manager/managerAuditLog");
 
 // // Configure OAuth2 client once at the top of your server
 // const oauth2Client = new google.auth.OAuth2(
@@ -28,14 +27,14 @@ const ActionLogs = require("../../models/manager/managerAuditLog")
 
 // const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
-
-
 const loginHospital = async (req, res) => {
   try {
     const { identifier, password } = req.body;
 
     if (!identifier || !password) {
-      return res.status(400).json({ message: "Identifier and password are required" });
+      return res
+        .status(400)
+        .json({ message: "Identifier and password are required" });
     }
 
     const hospital = await Hospitals.findOne({
@@ -49,21 +48,32 @@ const loginHospital = async (req, res) => {
       return res.status(404).json({ message: "Hospital not found" });
     }
 
-    if (hospital.isVerified === true) {
-      await logAction(hospital._id,"ATTEMPTED_TO_VERIFY_ACCOUNT_AGAIN",hospital._id,"Hospital","Hospital")
-      return res.status(400).json({ message: "This hospital has already been verified" });
-    }
+    // if (hospital.isVerified === true) {
+    //   await logAction(hospital._id,"ATTEMPTED_TO_VERIFY_ACCOUNT_AGAIN",hospital._id,"Hospital","Hospital")
+    //   return res.status(400).json({ message: "This hospital has already been verified" });
+    // }
 
     if (hospital.isdisabled || hospital.hospitalRep.revokedAccess) {
-      return res.status(403).json({ message: "Access revoked or hospital disabled" });
+      return res
+        .status(403)
+        .json({ message: "Access revoked or hospital disabled" });
     }
 
-    const isMatch = await bcrypt.compare(password, hospital.hospitalRep.password);
+    const isMatch = await bcrypt.compare(
+      password,
+      hospital.hospitalRep.password,
+    );
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    await logAction(hospital._id,"ATTEMPTED_TO_VERIFY_ACCOUNT",hospital._id,"Hospital","Hospital")
+    await logAction(
+      hospital._id,
+      "ATTEMPTED_TO_VERIFY_ACCOUNT",
+      hospital._id,
+      "Hospital",
+      "Hospital",
+    );
 
     // Generate temporary code (6 digits)
     const tempCode = crypto.randomInt(100000, 999999).toString();
@@ -100,12 +110,14 @@ const loginHospital = async (req, res) => {
       htmlContent: emailHtml,
       sender: {
         name: "Ctrl Create Labs",
-        email: "elikemjjames@gmail.com"
+        email: "elikemjjames@gmail.com",
       },
-      to: [{
-        email: hospital.hospitalDetails.contact.email,
-        name: hospital.hospitalRep.name
-      }]
+      to: [
+        {
+          email: hospital.hospitalDetails.contact.email,
+          name: hospital.hospitalRep.name,
+        },
+      ],
     });
 
     console.log("Email sent successfully via Brevo. ID:", response.messageId);
@@ -116,20 +128,21 @@ const loginHospital = async (req, res) => {
         id: hospital._id,
         isVerified: hospital.isVerified,
       },
-      messageId: response.messageId
+      messageId: response.messageId,
     });
-
   } catch (err) {
-    console.error("Error logging in hospital:", err.response?.body || err.message);
+    console.error(
+      "Error logging in hospital:",
+      err.response?.body || err.message,
+    );
     res.status(500).json({ message: "Internal server error" });
   }
 };
 
-
 const verifyHospitalLogin = async (req, res) => {
   try {
     // 1. Rename 'token' to 'otp' to prevent variable collision with JWT
-    const { email, otp } = req.body; 
+    const { email, otp } = req.body;
 
     // 1. Verify structural presence of both elements
     if (!email || !otp) {
@@ -138,7 +151,9 @@ const verifyHospitalLogin = async (req, res) => {
     }
 
     // 2. Use findOne() so it returns an Object instead of an Array
-    const hospital = await Hospitals.findOne({ "hospitalDetails.contact.email": email });
+    const hospital = await Hospitals.findOne({
+      "hospitalDetails.contact.email": email,
+    });
     if (!hospital) {
       return res.status(404).json({ message: "Hospital not found" });
     }
@@ -155,9 +170,16 @@ const verifyHospitalLogin = async (req, res) => {
 
     // 5. Fixed: Use hospital._id instead of the non-existent hospitalId variable
     await Hospitals.findByIdAndUpdate(hospital._id, {
-      isVerified: true,
+      isVerified: false,
     });
 
+    await logAction(
+      hospital._id,
+      "VERIFIED_ACCOUNT",
+      hospital._id,
+      "Hospital",
+      "Hospital",
+    );
     // Clear temp code parameters
     hospital.tempLoginCode = undefined;
     hospital.tempLoginExpires = undefined;
@@ -215,7 +237,7 @@ const registerHospital = async (req, res) => {
       r_password,
       r_confirm_password,
     } = req.body;
-    const userId = req.user.id
+    const userId = req.user.id;
     // Validate input
     const { error, value } = validateCreateHospital.validate(req.body);
     if (error) {
@@ -280,11 +302,9 @@ const registerHospital = async (req, res) => {
       hasChangedPassword: false,
     });
 
-    
-
     await newHospital.save();
 
-    await logAction(userId,"CREATED_HOSPITAL",newHospital._id,"Hospital")
+    await logAction(userId, "CREATED_HOSPITAL", newHospital._id, "Hospital");
 
     return res.status(201).json({
       message: "Hospital registered successfully",
@@ -369,7 +389,7 @@ const deleteHospitalById = async (req, res) => {
 const disableHospital = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id
+    const userId = req.user.id;
 
     const hospital = await Hospitals.findByIdAndUpdate(
       id,
@@ -381,7 +401,7 @@ const disableHospital = async (req, res) => {
       return res.status(404).json({ message: "Hospital not found" });
     }
 
-    await logAction(userId,"SUSPEND_HOSPITAL",id,"Hospital")
+    await logAction(userId, "SUSPEND_HOSPITAL", id, "Hospital");
 
     return res.status(200).json({
       message: "Hospital disabled successfully",
@@ -400,7 +420,7 @@ const disableHospital = async (req, res) => {
 
 const enableHospital = async (req, res) => {
   try {
-    const userId = req.user.id
+    const userId = req.user.id;
     const { id } = req.params;
 
     const hospital = await Hospitals.findByIdAndUpdate(
@@ -413,7 +433,7 @@ const enableHospital = async (req, res) => {
       return res.status(404).json({ message: "Hospital not found" });
     }
 
-    await logAction(userId,"ENABLED_HOSPITAL",id,"Hospital")
+    await logAction(userId, "ENABLED_HOSPITAL", id, "Hospital");
 
     return res.status(200).json({
       message: "Hospital re-enabled successfully",
@@ -485,11 +505,10 @@ const getactiveHospitals = async (req, res) => {
 
 // 1. Correct Import Syntax based on the latest @getbrevo/brevo documentation
 
-
 const sendHospitalDetails = async (req, res) => {
   try {
     const { hospitalId } = req.params;
-    const userId = req.user.id
+    const userId = req.user.id;
     // Find hospital by ID
     const hospital = await Hospitals.findById(hospitalId);
     if (!hospital) {
@@ -530,37 +549,37 @@ const sendHospitalDetails = async (req, res) => {
     const response = await brevo.transactionalEmails.sendTransacEmail({
       subject: "Account registered successfully",
       htmlContent: emailHtml,
-      sender: { 
-        name: "ctrl create labs", 
-        email: "elikemjjames@gmail.com" 
+      sender: {
+        name: "ctrl create labs",
+        email: "elikemjjames@gmail.com",
       },
-      to: [{ 
-        email: hospital.hospitalRep.email, 
-        name: hospital.hospitalRep.name 
-      }]
+      to: [
+        {
+          email: hospital.hospitalRep.email,
+          name: hospital.hospitalRep.name,
+        },
+      ],
     });
 
     // Extract the confirmation messageId from the modern response wrapper
     console.log("Email sent successfully via Brevo. ID:", response.messageId);
 
-    await logAction(userId,"SENT_HOSPITAL_DETAILS",hospitalId,"Hospital")
+    await logAction(userId, "SENT_HOSPITAL_DETAILS", hospitalId, "Hospital");
 
     return res.status(200).json({
       message: `Hospital details sent to ${hospital.hospitalRep.email}`,
-      messageId: response.messageId
+      messageId: response.messageId,
     });
-
   } catch (err) {
     console.error("Error sending hospital details:", err.message);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
 
-
 const updateHospital = async (req, res) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const updates = req.body; // should already be dot-notation keys
 
     if (!updates || Object.keys(updates).length === 0) {
       return res.status(400).json({ message: "No update fields provided" });
@@ -569,28 +588,77 @@ const updateHospital = async (req, res) => {
     // Block immutable fields
     const blockedFields = [
       "hospitalDetails.code",
+      "hospitalRep.role",
       "isdisabled",
       "active",
       "isVerified",
       "tempLoginCode",
       "tempLoginExpires",
     ];
-
     for (const field of blockedFields) {
-      // Check nested fields safely
-      const value = field.split(".").reduce((obj, key) => obj?.[key], updates);
-      if (value !== undefined && value !== null) {
+      if (updates[field] !== undefined) {
         return res
           .status(401)
           .json({ message: `Updating ${field} is not allowed` });
       }
     }
 
-    // Apply updates safely
+    // 🔎 Uniqueness checks
+    if (updates["hospitalDetails.contact.email"]) {
+      const existingHospital = await Hospitals.findOne({
+        "hospitalDetails.contact.email":
+          updates["hospitalDetails.contact.email"],
+        _id: { $ne: id },
+      });
+      if (existingHospital) {
+        return res
+          .status(409)
+          .json({ message: "Hospital contact email already exists" });
+      }
+    }
+
+    if (updates["hospitalDetails.contact.phone"]) {
+      const existingHospital = await Hospitals.findOne({
+        "hospitalDetails.contact.phone":
+          updates["hospitalDetails.contact.phone"],
+        _id: { $ne: id },
+      });
+      if (existingHospital) {
+        return res
+          .status(409)
+          .json({ message: "Hospital contact phone already exists" });
+      }
+    }
+
+    if (updates["hospitalRep.email"]) {
+      const existingRep = await Hospitals.findOne({
+        "hospitalRep.email": updates["hospitalRep.email"],
+        _id: { $ne: id },
+      });
+      if (existingRep) {
+        return res
+          .status(409)
+          .json({ message: "Representative email already exists" });
+      }
+    }
+
+    if (updates["hospitalRep.phone"]) {
+      const existingRep = await Hospitals.findOne({
+        "hospitalRep.phone": updates["hospitalRep.phone"],
+        _id: { $ne: id },
+      });
+      if (existingRep) {
+        return res
+          .status(409)
+          .json({ message: "Representative phone already exists" });
+      }
+    }
+
+    // ✅ Apply updates safely with dot-notation
     const updatedHospital = await Hospitals.findByIdAndUpdate(
       id,
       { $set: updates },
-      { returnDocument: "after", runValidators: true },
+      { new: true, runValidators: true },
     );
 
     if (!updatedHospital) {
@@ -615,14 +683,12 @@ const revokeHospitalAdminAccess = async (req, res) => {
     const updatedHospital = await Hospitals.findByIdAndUpdate(
       Id,
       { $set: { "hospitalRep.revokedAccess": true } },
-      {returnDocument: "after", runValidators: true },
+      { returnDocument: "after", runValidators: true },
     );
 
     if (!updatedHospital) {
       return res.status(404).json({ message: "Hospital not found" });
     }
-
-     
 
     res.status(200).json({
       message: "Hospital rep access revoked successfully",
@@ -1185,9 +1251,6 @@ const changePassword = async (req, res) => {
   }
 };
 
-
-
-
 const getAllLogs = async (req, res) => {
   try {
     const { date } = req.query;
@@ -1217,13 +1280,13 @@ const getAllLogs = async (req, res) => {
           await log.populate({
             path: "userId",
             model: "Manager",
-            select: "name email department"
+            select: "name email department",
           });
         } else if (determinedPath === "Hospital") {
           await log.populate({
             path: "userId",
             model: "Hospital",
-            select: "hospitalRep.name hospitalRep.email hospitalRep.phone"
+            select: "hospitalRep.name hospitalRep.email hospitalRep.phone",
           });
         }
       }
@@ -1233,26 +1296,28 @@ const getAllLogs = async (req, res) => {
         await log.populate({
           path: "entityId",
           model: log.entityType,
-          select: getSafeFields(log.entityType)
+          select: getSafeFields(log.entityType),
         });
       }
     }
 
     // Format logs for response
-    const formattedLogs = logs.map(log => {
+    const formattedLogs = logs.map((log) => {
       let hospitalDetails = null;
       if (log.entityType === "Hospital" && log.entityId?.hospitalDetails) {
         hospitalDetails = {
           name: log.entityId.hospitalDetails.name,
           code: log.entityId.hospitalDetails.code,
-          address: log.entityId.hospitalDetails.address || log.entityId.hospitalDetails.addresse,
-          contact: log.entityId.hospitalDetails.contact
+          address:
+            log.entityId.hospitalDetails.address ||
+            log.entityId.hospitalDetails.addresse,
+          contact: log.entityId.hospitalDetails.contact,
         };
       }
 
       // Safe structure cleanup so React never encounters a raw string ID or undefined fields
       let userData = log.userId;
-      
+
       if (typeof userData === "string" || !userData) {
         // If the ID wasn't found in the database, fallback gracefully
         userData = { name: "System Administrator", email: "admin@medsec.com" };
@@ -1260,12 +1325,12 @@ const getAllLogs = async (req, res) => {
 
       return {
         _id: log._id,
-        user: userData, 
+        user: userData,
         action: log.action,
         message: log.message,
         entityType: log.entityType,
         createdAt: log.createdAt,
-        hospitalDetails
+        hospitalDetails,
       };
     });
 
@@ -1275,11 +1340,6 @@ const getAllLogs = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
-
-
-
-
 
 // Get total staff across all hospitals
 // const getTotalStaff = async (req, res) => {
