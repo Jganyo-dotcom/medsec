@@ -37,7 +37,7 @@ const { OnlySuperiorManager, higherAuth2, higherAuth } = require("../../middlewe
 const router = express.Router();
 router.get("/managers", authmiddleware,higherAuth2, getAllManagers); // get all
 router.get("/pending-managers", authmiddleware,OnlySuperiorManager, getAllPotentialManagers);
-router.get("/hospitals/:id", authmiddleware, getHospitalById);
+router.get("/hospitals/:id", authmiddleware,higherAuth2, getHospitalById);
 router.patch("/approve-manager/:id", authmiddleware, OnlySuperiorManager,approveManager);
 router.patch("/approve-reset/:id", authmiddleware,OnlySuperiorManager, approveManagerCredentials);
 router.get("/pending-resets", authmiddleware,higherAuth2, resetManagerPasswordReset);

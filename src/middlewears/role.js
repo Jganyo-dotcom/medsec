@@ -13,10 +13,10 @@ const CheckroleonAll = (req, res, next) => {
 
 const higherAuth = (req, res, next) => {
   // Allowed roles
-  const allowedRoles = ["Manager", "superior manager","EMR Manager"];
+  const allowedRoles = ["MIST DEVELOPER", "superior manager","MIST MANAGER"];
 
   if (!allowedRoles.includes(req.user.role)) {
-    return res.status(403).json({ message: "Unauthorized access" });
+    return res.status(401).json({ message: "Unauthorized access" });
   }
 
   next();
@@ -24,10 +24,10 @@ const higherAuth = (req, res, next) => {
 
 const higherAuth2 = (req, res, next) => {
   // Allowed roles
-  const allowedRoles = ["Manager", "superior manager"];
+  const allowedRoles = ["MIST DEVELOPER", "superior manager"];
 
   if (!allowedRoles.includes(req.user.role)) {
-    return res.status(403).json({ message: "Unauthorized access" });
+    return res.status(401).json({ message: "Unauthorized access" });
   }
 
   next();

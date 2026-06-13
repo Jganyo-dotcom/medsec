@@ -21,7 +21,7 @@ const managerSchema = new mongoose.Schema(
     role: {
       type: String,
       default: "manager",
-      enum: ["manager", "superior manager"],
+      enum: ["MIST DEVELOPER", "superior manager", "MIST MANAGER"],
     },
     password: {
       type: String,

@@ -704,8 +704,10 @@ const revokeHospitalAdminAccess = async (req, res) => {
 const getAllManagers = async (req, res) => {
   try {
     const managers = await Manager.find({
-      role: "manager",
-      hasBeenApproved: true,
+      $or: [
+        { role: "MIST DEVELOPER", hasBeenApproved: true },
+        { role: "MIST MANAGER", hasBeenApproved: true },
+      ],
     });
 
     if (!managers || managers.length === 0) {
@@ -736,8 +738,10 @@ const getAllPotentialManagers = async (req, res) => {
   try {
     console.log("hit");
     const managers = await Manager.find({
-      role: "manager",
-      hasBeenApproved: false,
+      $or: [
+        { role: "MIST DEVELOPER", hasBeenApproved: false },
+        { role: "MIST MANAGER", hasBeenApproved: false },
+      ],
     });
 
     if (!managers || managers.length === 0) {
@@ -795,7 +799,7 @@ const resetManagerPasswordReset = async (req, res) => {
 // Register a new manager
 const registerManager = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     // Basic validation
     if (!name || !email || !password) {
@@ -819,7 +823,7 @@ const registerManager = async (req, res) => {
     const manager = new Manager({
       name,
       email,
-      role: "manager", // default to "manager"
+      role: "MIST DEVELOPER", // default to "manager"
       password: hashedPassword,
       hasBeenApproved: false, // optional flag if you want approval workflow
     });
