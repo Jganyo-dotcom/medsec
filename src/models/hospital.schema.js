@@ -6,7 +6,7 @@ const HospitalSchema = new mongoose.Schema(
       name: { type: String, required: true },
       code: { type: String, required: true, default: 3, unique: true },
       addresse: { type: String, unique: true, required: true },
-      postalAddress: { type: String, required: true, default:"N/A" },
+      postalAddress: { type: String, required: true, default: "N/A" },
       contact: {
         phone: { type: String, unique: true, required: true },
         email: { type: String, unique: true, required: true },
@@ -30,6 +30,8 @@ const HospitalSchema = new mongoose.Schema(
     isdisabled: { type: Boolean, default: false },
     active: { type: Boolean, default: true },
     isVerified: { type: Boolean, default: false },
+    isArchive: { type: Boolean, default: false },
+    isArchiveReason: { type: String, default: null },
   },
   { timestamps: true },
 );

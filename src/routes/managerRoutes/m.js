@@ -30,6 +30,7 @@ const {
   changePassword,
   approveManagerCredentials,
   resetManagerPasswordReset,
+  archiveHospital
 } = require("../../controllers/managers contoller/hospitalCreation");
 const authmiddleware = require("../../middlewears/auth");
 const { OnlySuperiorManager, higherAuth2, higherAuth } = require("../../middlewears/role");
@@ -58,6 +59,7 @@ router.delete("/delete-hospital/:id", authmiddleware,OnlySuperiorManager, delete
 router.patch("/disable-hospital/:id", authmiddleware,higherAuth, disableHospital);
 router.patch("/enable-hospital/:id", authmiddleware, higherAuth,enableHospital);
 ///////
+router.get("/achieve-hospitals/:id", authmiddleware,higherAuth, archiveHospital); 
 router.get("/get-active-hospitals", authmiddleware,higherAuth, IsactiveHospital); // to get the inactive hospital
 router.get("/get-inactive-hospitals", authmiddleware,higherAuth, getInactiveHospitals); //to get the inactive hospital
 router.get("/get-all-logs",authmiddleware,higherAuth,getAllLogs);// get all logs

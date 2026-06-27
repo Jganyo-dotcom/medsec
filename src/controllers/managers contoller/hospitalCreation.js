@@ -823,7 +823,7 @@ const registerManager = async (req, res) => {
     const manager = new Manager({
       name,
       email,
-      role: "MIST DEVELOPER", // default to "manager"
+      role: "MIST MANAGER", // default to "manager"
       password: hashedPassword,
       hasBeenApproved: false, // optional flag if you want approval workflow
     });
@@ -1345,6 +1345,45 @@ const getAllLogs = async (req, res) => {
   }
 };
 
+const archiveHospital = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.query;
+
+    // Update hospital record
+    const targetHospital = await Hospitals.findByIdAndUpdate(
+      id,
+      {
+        isArchive: true,
+        isArchiveReason: reason || "No reason provided",
+      },
+      { returnDocument: "after" }, // returns the updated document
+    ).exec();
+
+    // If hospital not found
+    if (!targetHospital) {
+      return res.status(404).json({ message: "Hospital details not found" });
+    }
+
+    // If hospital is already archived
+    if (targetHospital.isArchive) {
+      return res.status(200).json({
+        message: "Hospital already archived",
+        hospital: targetHospital,
+      });
+    }
+
+    // Success response
+    return res.status(200).json({
+      message: "Hospital archived successfully",
+      hospital: targetHospital,
+    });
+  } catch (err) {
+    console.error("Archive error:", err);
+    return res.status(500).json({ message: "Server error archiving hospital" });
+  }
+};
+
 // Get total staff across all hospitals
 // const getTotalStaff = async (req, res) => {
 //   try {
@@ -1396,5 +1435,6 @@ module.exports = {
   changePassword,
   approveManagerCredentials,
   resetManagerPasswordReset,
+  archiveHospital,
   // getTotalStaff,
 };
