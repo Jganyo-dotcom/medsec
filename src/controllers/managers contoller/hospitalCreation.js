@@ -1349,6 +1349,11 @@ const archiveHospital = async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.query;
+    if (reason.length < 5) {
+      return res
+        .status(400)
+        .json({ message: "Your reason is not valid enough" });
+    }
 
     // Update hospital record
     const targetHospital = await Hospitals.findByIdAndUpdate(
