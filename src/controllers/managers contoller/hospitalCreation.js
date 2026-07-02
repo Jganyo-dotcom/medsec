@@ -957,6 +957,12 @@ const loginManager = async (req, res) => {
         .json({ message: "Password was reset but awaiting approval" });
     }
 
+    if (manager.hasBeenApproved ===false) {
+      return res
+        .status(401)
+        .json({ message: "Account awaiting approval" });
+    }
+
     // Compare password
     const isMatch = await bcrypt.compare(password, manager.password);
     if (!isMatch) {
