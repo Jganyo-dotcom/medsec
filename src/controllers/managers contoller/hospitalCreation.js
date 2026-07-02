@@ -957,10 +957,76 @@ const loginManager = async (req, res) => {
         .json({ message: "Password was reset but awaiting approval" });
     }
 
-    if (manager.hasBeenApproved ===false) {
+    if (manager.hasBeenApproved === false) {
+      return res.status(401).json({ message: "Account awaiting approval" });
+    }
+
+    // Compare password
+    const isMatch = await bcrypt.compare(password, manager.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Issue JWT token
+    const token = jwt.sign(
+      { id: manager._id, role: manager.role },
+      process.env.JWT_SECRETE, // make sure you set this in .env
+      { expiresIn: process.env.EXPIRES_IN || "1h" },
+    );
+
+    const now = new Date();
+
+    const who = LoginHistory({
+      staff: manager.id,
+      date: now,
+      time: now.toLocaleTimeString(),
+    });
+
+    // Response
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      manager: {
+        id: manager._id,
+        name: manager.name,
+        email: manager.email,
+        role: manager.role,
+        hasChangedPassword: manager.hasChangedPassword,
+      },
+    });
+  } catch (err) {
+    console.error("Error logging in manager:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const loginMistDeveloper = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Email and password are required" });
+    }
+
+    // Find manager by email
+    const manager = await Manager.findOne({
+      email: email,
+      role: { $in: ["MIST DEVELOPER", "superior manager"] },
+    });
+    if (!manager) {
+      return res.status(404).json({ message: "Manager not found" });
+    }
+
+    if (manager.resetPasswordApproved === "awaiting") {
       return res
         .status(401)
-        .json({ message: "Account awaiting approval" });
+        .json({ message: "Password was reset but awaiting approval" });
+    }
+
+    if (manager.hasBeenApproved === false) {
+      return res.status(401).json({ message: "Account awaiting approval" });
     }
 
     // Compare password
@@ -1447,5 +1513,6 @@ module.exports = {
   approveManagerCredentials,
   resetManagerPasswordReset,
   archiveHospital,
+  loginMistDeveloper
   // getTotalStaff,
 };

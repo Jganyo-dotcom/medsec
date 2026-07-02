@@ -30,7 +30,8 @@ const {
   changePassword,
   approveManagerCredentials,
   resetManagerPasswordReset,
-  archiveHospital
+  archiveHospital,
+  loginMistDeveloper
 } = require("../../controllers/managers contoller/hospitalCreation");
 const authmiddleware = require("../../middlewears/auth");
 const { OnlySuperiorManager, higherAuth2, higherAuth } = require("../../middlewears/role");
@@ -45,6 +46,7 @@ router.get("/pending-resets", authmiddleware,higherAuth2, resetManagerPasswordRe
 router.get("/me", authmiddleware,higherAuth, getProfile);
 router.post("/register-manager", authmiddleware,higherAuth2, registerManager);
 router.post("/login-manager", loginManager);
+router.post("/login-mist-developer", loginMistDeveloper);
 router.get("/login-history", authmiddleware,higherAuth2, getAllLoginHistory);
 router.delete("/delete-manager/:id", authmiddleware,higherAuth2, deleteManager);
 router.post("/reset-password", authmiddleware,higherAuth2, resetManagerPassword);
