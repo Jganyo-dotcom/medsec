@@ -287,10 +287,10 @@ const loginStaff = async (req, res) => {
               hospitalCode: hospitalDoc.hospitalDetails.code,
               staffAccounts: {
                 name: hospitalDoc.hospitalRep.name,
-                department: "IT",
+                department: "IT Department",
                 email: hospitalDoc.hospitalRep.email,
                 phone: hospitalDoc.hospitalRep.phone,
-                role: "Admin",
+                role: "IT Admin",
                 password: hospitalDoc.hospitalRep.password, // make sure this exists
                 isActive: true,
               },

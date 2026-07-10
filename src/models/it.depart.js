@@ -22,7 +22,7 @@ const HospitalITSchema = new mongoose.Schema(
       phone: { type: String, unique: true, required: true },
       role: {
         type: String,
-        enum: ["Doctor", "Nurse", "LabScientist", "Pharmacist", "Admin"],
+        enum: ["Doctor", "Nurse", "LabScientist", "Pharmacist", "IT Admin"],
         required: true,
       },
       password: { type: String, minlength: 6, required: true },
