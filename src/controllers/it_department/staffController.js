@@ -175,7 +175,10 @@ const resetStaffPassword = async (req, res) => {
     const hospital = await Hospitals.findById(hospitalId);
     if (!hospital) return res.status(404).json({ error: "Hospital not found" });
 
-    const staff = await HospitalIT.findOne({ _id: staffId, hospital: hospitalId });
+    const staff = await HospitalIT.findOne({
+      _id: staffId,
+      hospital: hospitalId,
+    });
     if (!staff || staff.length === 0) {
       return res.status(404).json({ error: "Staff not found" });
     }
@@ -329,11 +332,14 @@ const loginStaff = async (req, res) => {
       }
     }
 
-    if (!hospital) return res.status(404).json({ message: "Staff not found" });
+    if (!hospital) console.log("none found");
+    return res.status(404).json({ message: "Staff not found" });
 
     const staff =
       hospital.staffAccounts.email === email ? hospital.staffAccounts : null;
-    if (!staff) return res.status(404).json({ message: "Staff not found" });
+    if (!staff) 
+      console.log("none found");
+    return res.status(404).json({ message: "Staff not found" });
 
     if (!staff.isActive) {
       return res.status(403).json({ message: "Staff account is disabled" });
