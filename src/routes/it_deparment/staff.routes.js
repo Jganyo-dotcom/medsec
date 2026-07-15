@@ -4,7 +4,7 @@ const {
   getAllStaff,
   deleteStaffById,
   loginStaff,
-  verifyStaffLogin,
+  verifyStaffOTP,
   getInactiveStaff,
   getActiveStaff,
   sendStaffDetails,
@@ -19,7 +19,7 @@ const router = express.Router();
 
 router.post("/register-staff", authmiddleware, registerStaff); // register staff
 router.post("/login-it-Admin/staffMember", loginStaff); // login staff
-router.post("/verify-login", verifyStaffLogin); // verify staff
+router.post("/verify-login", verifyStaffOTP); // verify staff
 router.get("/get-staffs",authmiddleware, getAllStaff); // get all
 router.delete("/delete-staff/:hospitalId", authmiddleware,deleteStaffById); // delete staff
 router.patch("/disable-staff/:hospitalId/:staffId",authmiddleware, disableStaff); // disable staff

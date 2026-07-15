@@ -409,11 +409,63 @@ const loginStaff = async (req, res) => {
 
 
 
-// Verify Staff Login
-const verifyStaffLogin = async (req, res) => {
+const verifyStaffOTP = async (req, res) => {
+  try {
+    const { email, otpCode } = req.body;
 
-  res.status(200).json({ message: "Staff login verified successfully" });
+    // 1. Basic validation input guard
+    if (!email || !otpCode) {
+      return res.status(400).json({ message: "Email and verification code are required" });
+    }
+
+    // 2. Find the staff record by email
+    const record = await HospitalIT.findOne({ "staffAccounts.email": email });
+
+    // 3. If account doesn't exist
+    if (!record) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    const staff = record.staffAccounts;
+
+    // 4. Check if the account is already verified
+    if (staff.isVerified) {
+      return res.status(400).json({ message: "Account is already verified. Please log in." });
+    }
+
+    // 5. Verify the code matches
+    if (staff.verificationToken !== otpCode) {
+      return res.status(401).json({ message: "Invalid verification code" });
+    }
+
+    // 6. Check if the code has expired (30-minute limit check)
+    const currentTime = new Date();
+    if (currentTime > staff.verificationTokenExpiry) {
+      return res.status(410).json({ 
+        message: "Verification code has expired. Please log in again to generate a new code." 
+      });
+    }
+
+    // 7. Success! Update verification fields directly on the object
+    record.staffAccounts.isVerified = true;
+    record.staffAccounts.verificationToken = null; // Clear token for security
+    record.staffAccounts.verificationTokenExpiry = null; // Clear expiry window
+
+    // Save the changes to the database
+    await record.save();
+
+    return res.status(200).json({ 
+      message: "Account verification successful! You can now log in to your dashboard." 
+    });
+
+  } catch (globalError) {
+    console.error("Verification processing error:", globalError);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 };
+
+
+
 
 // Get inactive staff
 const getInactiveStaff = async (req, res) => {
@@ -481,7 +533,7 @@ module.exports = {
   getAllStaff,
   deleteStaffById,
   loginStaff,
-  verifyStaffLogin,
+  verifyStaffOTP,
   getInactiveStaff,
   getActiveStaff,
   sendStaffDetails,
