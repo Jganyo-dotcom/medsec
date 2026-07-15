@@ -1,6 +1,9 @@
 const User = require("./models/manager/manager");
 const Hospital = require("./models/hospital.schema");
 const ActionLog = require("./models/manager/managerAuditLog");
+const { sendVerificationEmail } = require("./EmailTemplates/verificationMail");
+const { BrevoClient } = require("@getbrevo/brevo");
+const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
 
 const logAction = async (userId, action, entityId, entityType, path = "Manager") => {
   try {
@@ -103,4 +106,48 @@ function getSafeFields(entityType) {
   }
 }
 
-module.exports ={ logAction,getSafeFields}
+
+const sendUniversalMail = async (type, options) => {
+  const { recipientEmail, recipientName, subject, otpCode, personOrg ,custome} = options;
+  const currentYear = new Date().getFullYear();
+
+  // Basic input validation guard
+  if (!recipientEmail || !recipientEmail.includes("@")) {
+     console.error(`[Mail Aborted] Cannot send email. Address is invalid: ${recipientEmail}`);
+    
+    return null; // 🚀 CRITICAL FIX: Explicitly returns and halts execution instantly!
+  }
+
+  let htmlContent = "";
+
+  // Select template explicitly based on strict type indicator
+  if (type === "STAFF_VERIFICATION") {
+    htmlContent = sendVerificationEmail(recipientName, otpCode, currentYear);
+  } else if (type === "WE_MISSED_YOU") {
+    htmlContent = getWeMissedUTemplate(recipientName, currentYear, personOrg);
+  }else if (type === "Welcome_first_timers") {
+    htmlContent = getWelcomeTemplate(recipientName, currentYear, personOrg);
+  }
+  else if (type === "forgetPassword") {
+    htmlContent = forgetPasswordTemplate(custome, currentYear );
+  }else {
+    throw new Error(`Unknown email template type requested: ${type}`);
+  }
+
+  try {
+    const data = await brevo.transactionalEmails.sendTransacEmail({
+      to: [{ email: recipientEmail, name: recipientName }],
+      sender: { email: "elikemjjames@gmail.com", name: "CtrlCreate" },
+      subject: subject,
+      htmlContent: htmlContent,
+    });
+
+    console.log(`Email [${type}] successfully routed to ${recipientEmail}. Message ID:`, data.messageId);
+    return data;
+  } catch (error) {
+    console.error(`Failed to route universal mail to ${recipientEmail}:`, error);
+    throw error;
+  }
+};
+
+module.exports ={ logAction,getSafeFields,sendUniversalMail}

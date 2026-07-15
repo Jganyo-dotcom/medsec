@@ -1,4 +1,6 @@
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
+const Brevo = require("@getbrevo/brevo");
 const jwt = require("jsonwebtoken");
 const HospitalIT = require("../../models/it.depart");
 const Hospitals = require("../../models/hospital.schema");
@@ -11,6 +13,7 @@ const {
 } = require("../../validations/staffValidation/staff.validation");
 const lastEdited = require("../../models/lastEdited");
 const deleteBy = require("../../models/deletedBy");
+const { sendVerificationEmail } = require("../../EmailTemplates/verificationMail");
 
 // Register a new staff member
 const registerStaff = async (req, res) => {
@@ -264,149 +267,146 @@ const deleteStaffById = async (req, res) => {
 };
 
 // Login staff with failedAttempts handling
+
 const loginStaff = async (req, res) => {
   try {
     const { email, password } = req.body;
+    
+    // 1. Check if user typed email and password
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required" });
+      return res.status(400).json({ message: "Email and password are required" });
     }
 
-    // First, search HospitalIT for staff
-    let hospital = await HospitalIT.findOne({ "staffAccounts.email": email });
+    // 2. Find the staff record by email
+    let record = await HospitalIT.findOne({ "staffAccounts.email": email });
 
-    // If not found, search Hospitals collection
-    if (!hospital) {
-      const hospitalDoc = await Hospitals.findOne({
-        "hospitalRep.email": email,
-      });
+    // 3. If the record does not exist in HospitalIT, check master Hospitals collection
+    if (!record) {
+      const hospitalDoc = await Hospitals.findOne({ "hospitalRep.email": email });
+
+      // If found in master Hospitals collection, create their record in HospitalIT
       if (hospitalDoc) {
-        // Add staff details into HospitalIT schema
-        if (hospitalDoc) {
-          try {
-            hospital = new HospitalIT({
-              hospital: hospitalDoc._id,
-              hospitalCode: hospitalDoc.hospitalDetails.code,
-              staffAccounts: {
-                name: hospitalDoc.hospitalRep.name,
-                department: "IT Department",
-                email: hospitalDoc.hospitalRep.email,
-                phone: hospitalDoc.hospitalRep.phone,
-                role: "IT Admin",
-                password: hospitalDoc.hospitalRep.password, // make sure this exists
-                isActive: true,
-              },
-            });
+        record = new HospitalIT({
+          hospital: hospitalDoc._id,
+          hospitalCode: hospitalDoc.hospitalDetails.code,
+          staffAccounts: {
+            name: hospitalDoc.hospitalRep.name,
+            department: "IT Department",
+            email: hospitalDoc.hospitalRep.email,
+            phone: hospitalDoc.hospitalRep.phone,
+            role: "IT Admin",
+            password: hospitalDoc.hospitalRep.password, 
+            isActive: true,
+            isVerified: false 
+          },
+        });
 
-            await hospital.save();
+        // Save to database
+        await record.save();
 
-            return res
-              .status(201)
-              .json({ message: "We are all set up, try again" });
-          } catch (err) {
-            // Log the full error so you can see what went wrong
-            console.error("Error saving HospitalIT:", err);
-
-            // Handle duplicate key errors (email/phone already exists)
-            if (err.code === 11000) {
-              return res.status(400).json({
-                message: "Duplicate staff email or phone in HospitalIT",
-                details: err.keyValue,
-              });
-            }
-
-            // Handle validation errors
-            if (err.name === "ValidationError") {
-              return res.status(400).json({
-                message: "Validation failed",
-                details: err.errors,
-              });
-            }
-
-            // Fallback for other errors
-            console.log(err);
-            return res.status(500).json({ message: "Internal server error" });
-          }
-        }
+        return res.status(201).json({ message: "We are all set up, try again" });
+      } else {
+        return res.status(404).json({ message: "Account not found" });
       }
     }
 
-    if (!hospital) console.log("none found");
-    return res.status(404).json({ message: "Staff not found" });
+    // Extract the staff details into a simple variable to read easily
+    const staff = record.staffAccounts;
 
-    const staff =
-      hospital.staffAccounts.email === email ? hospital.staffAccounts : null;
-    if (!staff) console.log("none found");
-    return res.status(404).json({ message: "Staff not found" });
-
-    if (!staff.isActive) {
-      return res.status(403).json({ message: "Staff account is disabled" });
+    // 4. Check if account is blocked or disabled
+    if (!staff.isActive || staff.blocked || staff.isAdminDisabled) {
+      return res.status(403).json({ 
+        message: "Your account is deactivated or blocked. Contact IT support." 
+      });
     }
 
-    // Block if too many failed attempts
-    if (staff.failedAttempts >= 5 && staff.role !== "IT Admin") {
-      staff.blocked = true;
-      await hospital.save();
-      return res
-        .status(403)
-        .json({ message: "Account blocked due to too many failed attempts" });
+    // 5. Check if password matches
+    const isPasswordMatch = await bcrypt.compare(password, staff.password);
+    if (!isPasswordMatch) {
+      // Increase wrong attempts by 1
+      record.staffAccounts.failedAttempts = staff.failedAttempts + 1;
+
+      // If they miss password 5 times, block them
+      if (record.staffAccounts.failedAttempts >= 5) {
+        record.staffAccounts.blocked = true;
+      }
+
+      await record.save();
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    const isMatch = await bcrypt.compare(password, staff.password);
-    if (!isMatch) {
-      staff.failedAttempts += 1;
-      await hospital.save();
-      return res.status(401).json({ message: "Invalid credentials" });
+    // Reset wrong attempts back to 0 on successful password entry
+    record.staffAccounts.failedAttempts = 0;
+    await record.save();
+
+    // 6. Check if email is verified
+    if (!staff.isVerified) {
+      // Create a 6-digit number string
+      const otpCode = crypto.randomInt(100000, 999999).toString();
+      
+      // Set expiration time to 30 minutes from now
+      const expiryTime = new Date();
+      expiryTime.setMinutes(expiryTime.getMinutes() + 30);
+
+      // Save OTP and Expiry directly to the staff object
+      record.staffAccounts.verificationToken = otpCode;
+      record.staffAccounts.verificationTokenExpiry = expiryTime;
+      await record.save();
+
+      // Send the email using your universal mail function
+      await sendUniversalMail("STAFF_VERIFICATION", {
+        recipientEmail: staff.email,
+        recipientName: staff.name,
+        subject: "Action Required: Verify Your Hospital Staff Account",
+        otpCode: otpCode
+      });
+
+      return res.status(403).json({ 
+        message: "Account is not verified. A 6-digit code has been sent to your email." 
+      });
     }
 
-    if(!staff.isActive){
-      //generate a cryto number okay 
-      staff.
-    }
+    // 7. Look up the connected Hospital's name using the linked ID
+    const associatedHospital = await Hospitals.findById(record.hospital);
+    const hospitalName = associatedHospital ? associatedHospital.name : "Unknown Hospital";
 
-    // Reset failed attempts on success
-    staff.failedAttempts = 0;
-    await hospital.save();
-
+    // 8. Create the JWT login session token
     const token = jwt.sign(
-      {
-        staff: hospital._id,
-        hospital: hospital.hospital,
+      { 
+        staffId: record._id, 
+        email: staff.email, 
         role: staff.role,
-        hospitalCode: hospital.hospitalCode,
-        isAdminDisabled: hospital.isAdminDisabled,
+        hospitalId: record.hospital,
+        hospitalCode: record.hospitalCode
       },
-      process.env.JWT_SECRETE || "fallback_secret",
-      { expiresIn: process.env.EXPIRES_IN || "1d" },
+      process.env.JWT_SECRETE, 
+      { expiresIn: process.env.EXPIRES_IN } 
     );
 
-    const now = new Date();
+    // 9. Prepare what to send back to the user interface screen
+    const clientPayload = {
+      _id: record._id,
+      hospital: hospitalName, // 🚀 Clean lookup name sent back here
+      name: staff.name,
+      department: staff.department,
+      email: staff.email,
+      role: staff.role,
+      hasChangedPassword: staff.hasChangedPassword
+    };
 
-    const whoLoggedIn = new loginLogs({
-      staff: hospital._id,
-      date: now, // full date
-      time: now.toLocaleTimeString("en-GB", { hour12: false }),
-      // e.g. "14:35:22" (24-hour format, no date)
+    return res.status(200).json({ 
+      message: "Login successful", 
+      token: token,
+      staff: clientPayload 
     });
 
-    await whoLoggedIn.save();
-
-    return res.status(200).json({
-      message: "Login successful",
-      token,
-      staff: {
-        id: staff._id,
-        name: staff.name,
-        email: staff.email,
-        role: staff.role,
-      },
-    });
-  } catch (err) {
-    console.error("Error logging in staff:", err);
-    res.status(500).json({ message: "Internal server error" });
+  } catch (globalError) {
+    console.error("System error:", globalError);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+
 
 // Verify Staff Login
 const verifyStaffLogin = async (req, res) => {
