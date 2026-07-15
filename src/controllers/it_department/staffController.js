@@ -13,7 +13,8 @@ const {
 } = require("../../validations/staffValidation/staff.validation");
 const lastEdited = require("../../models/lastEdited");
 const deleteBy = require("../../models/deletedBy");
-const { sendVerificationEmail } = require("../../EmailTemplates/verificationMail");
+const { sendUniversalMail } = require("../../utils");
+
 
 // Register a new staff member
 const registerStaff = async (req, res) => {
