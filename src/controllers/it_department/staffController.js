@@ -292,6 +292,7 @@ const loginStaff = async (req, res) => {
 
     // 4. Check if account is blocked or disabled
     if (!staff.isActive || staff.blocked || staff.isAdminDisabled) {
+      staff.blocked = false;
       return res.status(403).json({ 
         message: "Your account is deactivated or blocked. Contact IT support." 
       });
@@ -425,7 +426,6 @@ const verifyStaffOTP = async (req, res) => {
 
     // 7. Success! Update verification fields directly on the object
     record.staffAccounts.isVerified = true;
-    record.staffAccounts.blocked = false;
     record.staffAccounts.verificationToken = null; // Clear token for security
     record.staffAccounts.verificationTokenExpiry = null; // Clear expiry window
 
