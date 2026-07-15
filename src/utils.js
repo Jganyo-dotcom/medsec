@@ -3,6 +3,7 @@ const Hospital = require("./models/hospital.schema");
 const ActionLog = require("./models/manager/managerAuditLog");
 const { sendVerificationEmail } = require("./EmailTemplates/verificationMail");
 const { BrevoClient } = require("@getbrevo/brevo");
+const { getHospitalVerificationTemplate } = require("./EmailTemplates/hospitalVerificationMail");
 const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
 
 const logAction = async (userId, action, entityId, entityType, path = "Manager") => {
@@ -123,8 +124,8 @@ const sendUniversalMail = async (type, options) => {
   // Select template explicitly based on strict type indicator
   if (type === "STAFF_VERIFICATION") {
     htmlContent = sendVerificationEmail(recipientName, otpCode, currentYear);
-  } else if (type === "WE_MISSED_YOU") {
-    htmlContent = getWeMissedUTemplate(recipientName, currentYear, personOrg);
+  } else if (type === "HOSPITAL_verification") {
+    htmlContent = getHospitalVerificationTemplate(recipientName, otpCode, currentYear);
   }else if (type === "Welcome_first_timers") {
     htmlContent = getWelcomeTemplate(recipientName, currentYear, personOrg);
   }

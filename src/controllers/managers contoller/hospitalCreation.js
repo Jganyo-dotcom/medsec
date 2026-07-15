@@ -10,7 +10,7 @@ const { BrevoClient } = require("@getbrevo/brevo");
 const Manager = require("../../models/manager/manager");
 const LoginHistory = require("../../models/manager/loginHistoryM");
 const { google } = require("googleapis");
-const { logAction, getSafeFields } = require("../../utils");
+const { logAction, getSafeFields, sendUniversalMail } = require("../../utils");
 const ActionLogs = require("../../models/manager/managerAuditLog");
 
 // // Configure OAuth2 client once at the top of your server
@@ -27,16 +27,20 @@ const ActionLogs = require("../../models/manager/managerAuditLog");
 
 // const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
+
+
 const loginHospital = async (req, res) => {
   try {
     const { identifier, password } = req.body;
 
+    // 1. Basic validation input fields guard
     if (!identifier || !password) {
       return res
         .status(400)
         .json({ message: "Identifier and password are required" });
     }
 
+    // 2. Identify the hospital profile by code or registration email
     const hospital = await Hospitals.findOne({
       $or: [
         { "hospitalDetails.code": identifier },
@@ -48,17 +52,14 @@ const loginHospital = async (req, res) => {
       return res.status(404).json({ message: "Hospital not found" });
     }
 
-    // if (hospital.isVerified === true) {
-    //   await logAction(hospital._id,"ATTEMPTED_TO_VERIFY_ACCOUNT_AGAIN",hospital._id,"Hospital","Hospital")
-    //   return res.status(400).json({ message: "This hospital has already been verified" });
-    // }
-
+    // 3. Security state checks
     if (hospital.isdisabled || hospital.hospitalRep.revokedAccess) {
       return res
         .status(403)
         .json({ message: "Access revoked or hospital disabled" });
     }
 
+    // 4. Verify password authentication match
     const isMatch = await bcrypt.compare(
       password,
       hospital.hospitalRep.password,
@@ -67,6 +68,37 @@ const loginHospital = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // 5. 🚀 EMAIL EXISTENCE WALL & NOTIFICATION LOG
+    // Check if an IT profile already points to this representative's email
+    const existingITProfile = await HospitalIT.findOne({ 
+      "staffAccounts.email": hospital.hospitalRep.email 
+    });
+
+    if (existingITProfile) {
+      // 🚀 Code skips creation entirely if the email exists, and outputs this clean console log
+      console.log(`[Sync Warning] Registration Skipped: Email ${hospital.hospitalRep.email} already exists or is already there in HospitalIT.`);
+    } else {
+      console.log(`[Silent Sync] Initializing brand new HospitalIT profile for: ${hospital.hospitalRep.email}`);
+      
+      const preInitializedIT = new HospitalIT({
+        hospital: hospital._id,
+        hospitalCode: hospital.hospitalDetails.code,
+        staffAccounts: {
+          name: hospital.hospitalRep.name,
+          department: "IT Department",
+          email: hospital.hospitalRep.email,
+          phone: hospital.hospitalRep.phone,
+          role: "IT Admin",
+          password: hospital.hospitalRep.password, // Carries over the existing string as-is without hashing
+          isActive: true,
+          isVerified: hospital.isVerified 
+        },
+      });
+
+      await preInitializedIT.save();
+    }
+
+    // 6. Audit trail operational logging
     await logAction(
       hospital._id,
       "ATTEMPTED_TO_VERIFY_ACCOUNT",
@@ -75,69 +107,40 @@ const loginHospital = async (req, res) => {
       "Hospital",
     );
 
-    // Generate temporary code (6 digits)
+    // 7. Generate 6-digit security token for the main hospital login flow
     const tempCode = crypto.randomInt(100000, 999999).toString();
 
-    // Save temp code with short expiry (5 minutes)
+    // Save temporary 5-minute login lifecycle code parameters
     hospital.tempLoginCode = tempCode;
     hospital.tempLoginExpires = Date.now() + 5 * 60 * 1000;
     await hospital.save();
 
-    // Build professional HTML email body
-    const emailHtml = `
-      <html>
-        <body style="font-family: Arial, sans-serif; color: #333;">
-          <p>Dear ${hospital.hospitalRep.name},</p>
-          <p>We received a login request for <strong>${hospital.hospitalDetails.name}</strong>.</p>
-          <p>Your temporary login code is:</p>
-          <h2 style="color: #2c3e50; letter-spacing: 2px;">${tempCode}</h2>
-          <p>This code will expire in <strong>5 minutes</strong>.</p>
-          <p>If you did not initiate this request, please contact our support team immediately at 
-          <a href="mailto:elikemejay@gmail.com">elikemejay@gmail.com</a>.</p>
-          <br>
-          <p>Best regards,<br>
-          <strong>Ctrl Create Labs Team</strong></p>
-        </body>
-      </html>
-    `;
-
-    // Initialize Brevo client
-    const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
-
-    // Send transactional email
-    const response = await brevo.transactionalEmails.sendTransacEmail({
+    // 8. Dispatch verification transmission ONLY for main hospital portal access
+     sendUniversalMail("HOSPITAL_verification", {
+      recipientEmail: hospital.hospitalDetails.contact.email,
+      recipientName: hospital.hospitalRep.name,
       subject: "Temporary Login Code - Ctrl Create Labs",
-      htmlContent: emailHtml,
-      sender: {
-        name: "Ctrl Create Labs",
-        email: "elikemjjames@gmail.com",
-      },
-      to: [
-        {
-          email: hospital.hospitalDetails.contact.email,
-          name: hospital.hospitalRep.name,
-        },
-      ],
+      otpCode: tempCode
     });
 
-    console.log("Email sent successfully via Brevo. ID:", response.messageId);
+    console.log(`Hospital login token dispatched successfully to: ${hospital.hospitalDetails.contact.email}`);
 
     return res.status(200).json({
       message: "Temporary login code sent to hospital email",
       hospital: {
         id: hospital._id,
         isVerified: hospital.isVerified,
-      },
-      messageId: response.messageId,
+      }
     });
+
   } catch (err) {
-    console.error(
-      "Error logging in hospital:",
-      err.response?.body || err.message,
-    );
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Error logging in hospital:", err.message);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+
+
 
 const verifyHospitalLogin = async (req, res) => {
   try {
@@ -207,7 +210,7 @@ const verifyHospitalLogin = async (req, res) => {
 };
 
 // Helper: Generate hospital code
-async function generateHospitalCode(hospitalName, address) {
+async function generateHospitalCode (hospitalName, address) {
   const words = hospitalName.trim().split(/\s+/);
   const acronym = words.map((w) => w[0].toUpperCase()).join("");
 
