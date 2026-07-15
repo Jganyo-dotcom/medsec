@@ -420,6 +420,7 @@ const verifyStaffOTP = async (req, res) => {
 
     // 2. Find the staff record by email
     const record = await HospitalIT.findOne({ "staffAccounts.email": email });
+    console.log(record)
 
     // 3. If account doesn't exist
     if (!record) {
