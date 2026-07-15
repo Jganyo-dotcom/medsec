@@ -671,7 +671,7 @@ const updateHospital = async (req, res) => {
     const updatedHospital = await Hospitals.findByIdAndUpdate(
       id,
       { $set: updates },
-      { new: true, runValidators: true },
+      { returnDocument: 'after', runValidators: true },
     );
 
     if (!updatedHospital) {
