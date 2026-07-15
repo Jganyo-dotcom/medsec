@@ -292,7 +292,9 @@ const loginStaff = async (req, res) => {
 
     // 4. Check if account is blocked or disabled
     if (!staff.isActive || staff.blocked || staff.isAdminDisabled) {
-      staff.blocked = false;
+      record.staffAccounts.blocked = false;
+      await record.save(); // 🚀 This is the correct way to save changes to the database
+      await staff.save()
       return res.status(403).json({ 
         message: "Your account is deactivated or blocked. Contact IT support." 
       });
