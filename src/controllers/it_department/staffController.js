@@ -281,34 +281,10 @@ const loginStaff = async (req, res) => {
     // 2. Find the staff record by email
     let record = await HospitalIT.findOne({ "staffAccounts.email": email });
 
-    // 3. If the record does not exist in HospitalIT, check master Hospitals collection
+    // 3. 🚀 CLEANED UP: Return 404 immediately if not found
+    // The hospital rep profile creation now happens directly during hospital login
     if (!record) {
-      const hospitalDoc = await Hospitals.findOne({ "hospitalRep.email": email });
-
-      // If found in master Hospitals collection, create their record in HospitalIT
-      if (hospitalDoc) {
-        record = new HospitalIT({
-          hospital: hospitalDoc._id,
-          hospitalCode: hospitalDoc.hospitalDetails.code,
-          staffAccounts: {
-            name: hospitalDoc.hospitalRep.name,
-            department: "IT Department",
-            email: hospitalDoc.hospitalRep.email,
-            phone: hospitalDoc.hospitalRep.phone,
-            role: "IT Admin",
-            password: hospitalDoc.hospitalRep.password, 
-            isActive: true,
-            isVerified: false 
-          },
-        });
-
-        // Save to database
-        await record.save();
-
-        return res.status(201).json({ message: "We are all set up, try again" });
-      } else {
-        return res.status(404).json({ message: "Account not found" });
-      }
+      return res.status(404).json({ message: "Account not found" });
     }
 
     // Extract the staff details into a simple variable to read easily
@@ -387,7 +363,7 @@ const loginStaff = async (req, res) => {
     // 9. Prepare what to send back to the user interface screen
     const clientPayload = {
       _id: record._id,
-      hospital: hospitalName, // 🚀 Clean lookup name sent back here
+      hospital: hospitalName,
       name: staff.name,
       department: staff.department,
       email: staff.email,
@@ -448,6 +424,7 @@ const verifyStaffOTP = async (req, res) => {
 
     // 7. Success! Update verification fields directly on the object
     record.staffAccounts.isVerified = true;
+    record.staffAccounts.blocked = false;
     record.staffAccounts.verificationToken = null; // Clear token for security
     record.staffAccounts.verificationTokenExpiry = null; // Clear expiry window
 

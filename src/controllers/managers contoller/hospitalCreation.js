@@ -1,5 +1,6 @@
 const Hospitals = require("../../models/hospital.schema");
 const validateCreateHospital = require("../../validations/manager validations/validations");
+const HospitalIT = require("../../models/it.depart");
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
@@ -52,14 +53,27 @@ const loginHospital = async (req, res) => {
       return res.status(404).json({ message: "Hospital not found" });
     }
 
-    // 3. Security state checks
+    // 3. 🚀 VERIFICATION STATUS GUARD
+    // If the hospital is already verified, block further processing and alert the client
+    if (hospital.isVerified === true) {
+      await logAction(
+        hospital._id,
+        "ATTEMPTED_TO_VERIFY_ACCOUNT_AGAIN",
+        hospital._id,
+        "Hospital",
+        "Hospital"
+      );
+      return res.status(400).json({ message: "This hospital has already been verified" });
+    }
+
+    // 4. Security state checks (Suspended, Disabled or Access Revoked)
     if (hospital.isdisabled || hospital.hospitalRep.revokedAccess) {
       return res
         .status(403)
         .json({ message: "Access revoked or hospital disabled" });
     }
 
-    // 4. Verify password authentication match
+    // 5. Verify password authentication match
     const isMatch = await bcrypt.compare(
       password,
       hospital.hospitalRep.password,
@@ -68,14 +82,12 @@ const loginHospital = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // 5. 🚀 EMAIL EXISTENCE WALL & NOTIFICATION LOG
-    // Check if an IT profile already points to this representative's email
+    // 6. EMAIL EXISTENCE WALL & NOTIFICATION LOG
     const existingITProfile = await HospitalIT.findOne({ 
       "staffAccounts.email": hospital.hospitalRep.email 
     });
 
     if (existingITProfile) {
-      // 🚀 Code skips creation entirely if the email exists, and outputs this clean console log
       console.log(`[Sync Warning] Registration Skipped: Email ${hospital.hospitalRep.email} already exists or is already there in HospitalIT.`);
     } else {
       console.log(`[Silent Sync] Initializing brand new HospitalIT profile for: ${hospital.hospitalRep.email}`);
@@ -98,7 +110,7 @@ const loginHospital = async (req, res) => {
       await preInitializedIT.save();
     }
 
-    // 6. Audit trail operational logging
+    // 7. Audit trail operational logging
     await logAction(
       hospital._id,
       "ATTEMPTED_TO_VERIFY_ACCOUNT",
@@ -107,7 +119,7 @@ const loginHospital = async (req, res) => {
       "Hospital",
     );
 
-    // 7. Generate 6-digit security token for the main hospital login flow
+    // 8. Generate 6-digit security token for the main hospital login flow
     const tempCode = crypto.randomInt(100000, 999999).toString();
 
     // Save temporary 5-minute login lifecycle code parameters
@@ -115,8 +127,8 @@ const loginHospital = async (req, res) => {
     hospital.tempLoginExpires = Date.now() + 5 * 60 * 1000;
     await hospital.save();
 
-    // 8. Dispatch verification transmission ONLY for main hospital portal access
-     sendUniversalMail("HOSPITAL_verification", {
+    // 9. Dispatch verification transmission ONLY for main hospital portal access
+    sendUniversalMail("HOSPITAL_verification", {
       recipientEmail: hospital.hospitalDetails.contact.email,
       recipientName: hospital.hospitalRep.name,
       subject: "Temporary Login Code - Ctrl Create Labs",
@@ -138,8 +150,6 @@ const loginHospital = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
-
 
 
 const verifyHospitalLogin = async (req, res) => {
