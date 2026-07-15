@@ -27,11 +27,14 @@ const HospitalITSchema = new mongoose.Schema(
       },
       password: { type: String, minlength: 6, required: true },
       isActive: { type: Boolean, default: true },
+      isVerified: { type: Boolean, default: false },
       hasChangedPassword: { type: Boolean, default: false },
       resetPassword: { type: Boolean, default: false },
       blocked: { type: Boolean, default: false },
       isAdminDisabled: { type: Boolean, default: false },
       failedAttempts: { type: Number, default: 0 }, // for login security
+      verificationToken: { type: String, default: null },
+      verificationTokenExpiry: { type: Date, default: null },
     },
 
     active: { type: Boolean, default: true },

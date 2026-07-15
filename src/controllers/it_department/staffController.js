@@ -337,8 +337,7 @@ const loginStaff = async (req, res) => {
 
     const staff =
       hospital.staffAccounts.email === email ? hospital.staffAccounts : null;
-    if (!staff) 
-      console.log("none found");
+    if (!staff) console.log("none found");
     return res.status(404).json({ message: "Staff not found" });
 
     if (!staff.isActive) {
@@ -346,7 +345,7 @@ const loginStaff = async (req, res) => {
     }
 
     // Block if too many failed attempts
-    if (staff.failedAttempts >= 5) {
+    if (staff.failedAttempts >= 5 && staff.role !== "IT Admin") {
       staff.blocked = true;
       await hospital.save();
       return res
@@ -359,6 +358,11 @@ const loginStaff = async (req, res) => {
       staff.failedAttempts += 1;
       await hospital.save();
       return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    if(!staff.isActive){
+      //generate a cryto number okay 
+      staff.
     }
 
     // Reset failed attempts on success
@@ -406,6 +410,7 @@ const loginStaff = async (req, res) => {
 
 // Verify Staff Login
 const verifyStaffLogin = async (req, res) => {
+
   res.status(200).json({ message: "Staff login verified successfully" });
 };
 
