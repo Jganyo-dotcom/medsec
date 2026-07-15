@@ -347,7 +347,7 @@ const loginStaff = async (req, res) => {
 
     // 7. Look up the connected Hospital's name using the linked ID
     const associatedHospital = await Hospitals.findById(record.hospital);
-    const hospitalName = associatedHospital ? associatedHospital.name : "Unknown Hospital";
+    const hospitalName = associatedHospital ? associatedHospital.hospitalDetails.name : "Unknown Hospital";
 
     // 8. Create the JWT login session token
     const token = jwt.sign(
