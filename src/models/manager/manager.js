@@ -20,7 +20,7 @@ const managerSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      default: "manager",
+      default: "MIST MANAGER",
       enum: ["MIST DEVELOPER", "superior manager", "MIST MANAGER"],
     },
     password: {
@@ -36,6 +36,10 @@ const managerSchema = new mongoose.Schema(
       default: "N/A",
       enum: ["awaiting", "done", "N/A"],
     },
+    hasChangedPassword:{
+      type: Boolean,
+      default: false,
+    }
   },
   { timestamps: true },
 );
