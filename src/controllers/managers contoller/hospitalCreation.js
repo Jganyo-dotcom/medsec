@@ -995,6 +995,8 @@ const loginManager = async (req, res) => {
       time: now.toLocaleTimeString(),
     });
 
+    await who.save()
+
     // Response
     res.status(200).json({
       message: "Login successful",
