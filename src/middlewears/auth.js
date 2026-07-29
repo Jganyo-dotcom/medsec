@@ -15,7 +15,7 @@ const authmiddleware = async (req, res, next) => { // 1. Added 'async'
     req.user = decoded;
 
     // 2. Corrected role check (handles case-sensitivity & proper boolean logic)
-    const checkedRoles = ["manager", "MIST DEVELOPER", "superior manager", "MIST MANAGER"];
+    const checkedRoles = ["MIST DEVELOPER", "MIST MANAGER"];
     
     if (checkedRoles.includes(req.user.role)) {
       // Fetch manager record
