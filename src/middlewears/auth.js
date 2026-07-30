@@ -29,12 +29,18 @@ const authmiddleware = async (req, res, next) => { // 1. Added 'async'
       }
 
       // Force initial password change rule
-      if (!theManager.hasChangedPassword) {
-        console.log(theManager.hasChangedPassword, theManager.name)
-        return res.status(403).json({
-          message: "Please change your default password before proceeding.",
-        });
-      }
+
+      const settingsPath = "/api/manager/change-password";
+
+        // .startsWith() ensures the ACTUAL route begins with your allowed path, ignoring queries
+        if (!theManager.hasChangedPassword && !req.path.startsWith(settingsPath)) {
+          console.log("Blocking access:", theManager.hasChangedPassword, theManager.name);
+
+          return res.status(403).json({
+            message: "Please change your default password before proceeding.",
+          });
+        }
+
     }
 
     next();
