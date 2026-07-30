@@ -783,7 +783,7 @@ const getAllPotentialManagers = async (req, res) => {
 const resetManagerPasswordReset = async (req, res) => {
   try {
     const managers = await Manager.find({
-      role: "manager",
+      role: "MIST MANAGER",
       resetPasswordApproved: "awaiting",
     });
 
@@ -1257,6 +1257,7 @@ const approveManagerCredentials = async (req, res) => {
     const manager = await Manager.findByIdAndUpdate(
       id,
       { resetPasswordApproved: "done" },
+      {hasChangedPassword:false},
       { returnDocument: "after" },
     );
     return res.status(200).json({ message: "Reset approved" });

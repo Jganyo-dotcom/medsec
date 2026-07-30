@@ -30,6 +30,7 @@ const authmiddleware = async (req, res, next) => { // 1. Added 'async'
 
       // Force initial password change rule
       if (!theManager.hasChangedPassword) {
+        console.log(theManager.hasChangedPassword, theManager.name)
         return res.status(403).json({
           message: "Please change your default password before proceeding.",
         });
