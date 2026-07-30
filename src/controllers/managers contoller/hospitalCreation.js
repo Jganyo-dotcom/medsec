@@ -183,7 +183,7 @@ const verifyHospitalLogin = async (req, res) => {
 
     // 5. Fixed: Use hospital._id instead of the non-existent hospitalId variable
     await Hospitals.findByIdAndUpdate(hospital._id, {
-      isVerified: false,
+      isVerified: true,
     });
 
     await logAction(
