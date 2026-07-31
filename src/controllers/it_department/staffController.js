@@ -319,7 +319,7 @@ const loginStaff = async (req, res) => {
     await record.save();
 
     // 6. Check if email is verified
-    if (!staff.isVerified) {
+    if (staff.isVerified === "any") {
       // Create a 6-digit number string
       const otpCode = crypto.randomInt(100000, 999999).toString();
       
