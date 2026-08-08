@@ -20,9 +20,17 @@ const HospitalITSchema = new mongoose.Schema(
       department: { type: String, required: true },
       email: { type: String, unique: true, required: true },
       phone: { type: String, unique: true, required: true },
+      staffID: { type: String, default:"N/A"},
       role: {
         type: String,
-        enum: ["Doctor", "Nurse", "LabScientist", "Pharmacist", "IT Admin"],
+        enum: [
+          "Doctor",
+          "Nurse",
+          "LabScientist",
+          "Pharmacist",
+          "IT Admin",
+          "Receptionist",
+        ],
         required: true,
       },
       password: { type: String, minlength: 6, required: true },

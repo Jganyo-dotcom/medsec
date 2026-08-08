@@ -12,6 +12,7 @@ const {
   disableStaff,
   registerStaff,
   editStaffById,
+  getStaffById,
 } = require("../../controllers/it_department/staffController");
 const authmiddleware = require("../../middlewears/auth");
 
@@ -21,6 +22,8 @@ router.post("/register-staff", authmiddleware, registerStaff); // register staff
 router.post("/login-it-Admin/staffMember", loginStaff); // login staff
 router.post("/verify-login", verifyStaffOTP); // verify staff
 router.get("/get-staffs",authmiddleware, getAllStaff); // get all
+router.get("/staff/:id", authmiddleware,getStaffById );
+
 router.delete("/delete-staff/:hospitalId", authmiddleware,deleteStaffById); // delete staff
 router.patch("/disable-staff/:hospitalId/:staffId",authmiddleware, disableStaff); // disable staff
 router.patch("/edit-staff/:id",authmiddleware, editStaffById); // edit staff
