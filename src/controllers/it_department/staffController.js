@@ -495,6 +495,11 @@ const getStaffById = async (req, res) => {
       return res.status(404).json({ error: "Staff member not found" });
     }
 
+    const lastLoggedIn = await loginLogs
+      .findOne({ staff: id })
+      .sort({ createdAt: -1 })
+      .select("date time");
+
     const account = staffDoc.staffAccounts;
 
     // Format the response structure to match your frontend requirements
@@ -513,7 +518,7 @@ const getStaffById = async (req, res) => {
         month: "short",
         day: "numeric",
       }),
-      lastLogin: "N/A", // Can be updated if you track login history
+      lastLogin: lastLoggedIn || "N/A", // Can be updated if you track login history
       recentActivity: [], // Placeholder for activity log feed
     };
 
