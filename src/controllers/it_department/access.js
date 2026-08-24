@@ -1,4 +1,4 @@
-const HospitalIT = require("../../models/it.depart"); // adjust path
+const HospitalIT = require("../../models/itAdmin/it.depart"); // adjust path
 
 const getFullMedicalRecords = async (req, res) => {
   try {

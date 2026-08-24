@@ -1,12 +1,20 @@
-const User = require("./models/manager/manager");
-const Hospital = require("./models/hospital.schema");
-const ActionLog = require("./models/manager/managerAuditLog");
-const { sendVerificationEmail } = require("./EmailTemplates/verificationMail");
+const User = require("../models/manager/manager");
+const Hospital = require("../models/hospital.schema");
+const ActionLog = require("../models/manager/managerAuditLog");
+const { sendVerificationEmail } = require("../EmailTemplates/verificationMail");
 const { BrevoClient } = require("@getbrevo/brevo");
-const { getHospitalVerificationTemplate } = require("./EmailTemplates/hospitalVerificationMail");
+const {
+  getHospitalVerificationTemplate,
+} = require("../EmailTemplates/hospitalVerificationMail");
 const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
 
-const logAction = async (userId, action, entityId, entityType, path = "Manager") => {
+const logAction = async (
+  userId,
+  action,
+  entityId,
+  entityType,
+  path = "Manager",
+) => {
   try {
     let actorName = "";
     let actorEmail = "";
@@ -37,48 +45,48 @@ const logAction = async (userId, action, entityId, entityType, path = "Manager")
       case "SENT_HOSPITAL_DETAILS":
         hospital = await Hospital.findById(entityId);
         message = `${actorName} sent ${hospital?.hospitalDetails?.name} details`;
-        console.log(message)
+        console.log(message);
         break;
 
       case "SUSPEND_HOSPITAL":
         hospital = await Hospital.findById(entityId);
         message = `${actorName} suspended ${hospital?.hospitalDetails?.name}`;
-        console.log(message)
+        console.log(message);
         break;
 
       case "ENABLED_HOSPITAL":
         hospital = await Hospital.findById(entityId);
         message = `${actorName} enabled ${hospital?.hospitalDetails?.name}`;
-        console.log(message)
+        console.log(message);
         break;
 
       case "ATTEMPTED_TO_VERIFY_ACCOUNT":
         hospital = await Hospital.findById(entityId);
         message = `${hospital?.hospitalDetails?.name} initiated the verification process`;
-        console.log(message)
+        console.log(message);
         break;
 
       case "ATTEMPTED_TO_VERIFY_ACCOUNT_AGAIN":
         hospital = await Hospital.findById(entityId);
         message = `${hospital?.hospitalDetails?.name} attempted the verification process again`;
-        console.log(message)
+        console.log(message);
         break;
 
       case "VERIFIED_ACCOUNT":
         hospital = await Hospital.findById(entityId);
         message = `${hospital?.hospitalDetails?.name} varified their hospital`;
-        console.log(message)
+        console.log(message);
         break;
 
       case "CREATED_HOSPITAL":
         hospital = await Hospital.findById(entityId);
         message = `${actorName} created  ${hospital?.hospitalDetails?.name}`;
-        console.log(message)
+        console.log(message);
         break;
 
       default:
         message = `${actorName} performed ${action}`;
-        console.log(message)
+        console.log(message);
     }
 
     await ActionLog.create({
@@ -87,7 +95,7 @@ const logAction = async (userId, action, entityId, entityType, path = "Manager")
       action,
       entityId,
       entityType,
-      message
+      message,
     });
   } catch (err) {
     console.error("Error logging action:", err.message);
@@ -107,15 +115,23 @@ function getSafeFields(entityType) {
   }
 }
 
-
 const sendUniversalMail = async (type, options) => {
-  const { recipientEmail, recipientName, subject, otpCode, personOrg ,custome} = options;
+  const {
+    recipientEmail,
+    recipientName,
+    subject,
+    otpCode,
+    personOrg,
+    custome,
+  } = options;
   const currentYear = new Date().getFullYear();
 
   // Basic input validation guard
   if (!recipientEmail || !recipientEmail.includes("@")) {
-     console.error(`[Mail Aborted] Cannot send email. Address is invalid: ${recipientEmail}`);
-    
+    console.error(
+      `[Mail Aborted] Cannot send email. Address is invalid: ${recipientEmail}`,
+    );
+
     return null; // 🚀 CRITICAL FIX: Explicitly returns and halts execution instantly!
   }
 
@@ -125,13 +141,16 @@ const sendUniversalMail = async (type, options) => {
   if (type === "STAFF_VERIFICATION") {
     htmlContent = sendVerificationEmail(recipientName, otpCode, currentYear);
   } else if (type === "HOSPITAL_verification") {
-    htmlContent = getHospitalVerificationTemplate(recipientName, otpCode, currentYear);
-  }else if (type === "Welcome_first_timers") {
+    htmlContent = getHospitalVerificationTemplate(
+      recipientName,
+      otpCode,
+      currentYear,
+    );
+  } else if (type === "Welcome_first_timers") {
     htmlContent = getWelcomeTemplate(recipientName, currentYear, personOrg);
-  }
-  else if (type === "forgetPassword") {
-    htmlContent = forgetPasswordTemplate(custome, currentYear );
-  }else {
+  } else if (type === "forgetPassword") {
+    htmlContent = forgetPasswordTemplate(custome, currentYear);
+  } else {
     throw new Error(`Unknown email template type requested: ${type}`);
   }
 
@@ -143,12 +162,18 @@ const sendUniversalMail = async (type, options) => {
       htmlContent: htmlContent,
     });
 
-    console.log(`Email [${type}] successfully routed to ${recipientEmail}. Message ID:`, data.messageId);
+    console.log(
+      `Email [${type}] successfully routed to ${recipientEmail}. Message ID:`,
+      data.messageId,
+    );
     return data;
   } catch (error) {
-    console.error(`Failed to route universal mail to ${recipientEmail}:`, error);
+    console.error(
+      `Failed to route universal mail to ${recipientEmail}:`,
+      error,
+    );
     throw error;
   }
 };
 
-module.exports ={ logAction,getSafeFields,sendUniversalMail}
+module.exports = { logAction, getSafeFields, sendUniversalMail };

@@ -1,6 +1,6 @@
 const Hospitals = require("../../models/hospital.schema");
 const validateCreateHospital = require("../../validations/manager validations/validations");
-const HospitalIT = require("../../models/it.depart");
+const HospitalIT = require("../../models/itAdmin/it.depart");
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
@@ -11,7 +11,11 @@ const { BrevoClient } = require("@getbrevo/brevo");
 const Manager = require("../../models/manager/manager");
 const LoginHistory = require("../../models/manager/loginHistoryM");
 const { google } = require("googleapis");
-const { logAction, getSafeFields, sendUniversalMail } = require("../../utils");
+const {
+  logAction,
+  getSafeFields,
+  sendUniversalMail,
+} = require("../../common/Managerutils");
 const ActionLogs = require("../../models/manager/managerAuditLog");
 
 // // Configure OAuth2 client once at the top of your server
@@ -27,8 +31,6 @@ const ActionLogs = require("../../models/manager/managerAuditLog");
 // });
 
 // const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-
-
 
 const loginHospital = async (req, res) => {
   try {
@@ -61,9 +63,11 @@ const loginHospital = async (req, res) => {
         "ATTEMPTED_TO_VERIFY_ACCOUNT_AGAIN",
         hospital._id,
         "Hospital",
-        "Hospital"
+        "Hospital",
       );
-      return res.status(400).json({ message: "This hospital has already been verified" });
+      return res
+        .status(400)
+        .json({ message: "This hospital has already been verified" });
     }
 
     // 4. Security state checks (Suspended, Disabled or Access Revoked)
@@ -83,15 +87,19 @@ const loginHospital = async (req, res) => {
     }
 
     // 6. EMAIL EXISTENCE WALL & NOTIFICATION LOG
-    const existingITProfile = await HospitalIT.findOne({ 
-      "staffAccounts.email": hospital.hospitalRep.email 
+    const existingITProfile = await HospitalIT.findOne({
+      "staffAccounts.email": hospital.hospitalRep.email,
     });
 
     if (existingITProfile) {
-      console.log(`[Sync Warning] Registration Skipped: Email ${hospital.hospitalRep.email} already exists or is already there in HospitalIT.`);
+      console.log(
+        `[Sync Warning] Registration Skipped: Email ${hospital.hospitalRep.email} already exists or is already there in HospitalIT.`,
+      );
     } else {
-      console.log(`[Silent Sync] Initializing brand new HospitalIT profile for: ${hospital.hospitalRep.email}`);
-      
+      console.log(
+        `[Silent Sync] Initializing brand new HospitalIT profile for: ${hospital.hospitalRep.email}`,
+      );
+
       const preInitializedIT = new HospitalIT({
         hospital: hospital._id,
         hospitalCode: hospital.hospitalDetails.code,
@@ -103,7 +111,7 @@ const loginHospital = async (req, res) => {
           role: "IT Admin",
           password: hospital.hospitalRep.password, // Carries over the existing string as-is without hashing
           isActive: true,
-          isVerified: hospital.isVerified 
+          isVerified: hospital.isVerified,
         },
       });
 
@@ -132,25 +140,25 @@ const loginHospital = async (req, res) => {
       recipientEmail: hospital.hospitalDetails.contact.email,
       recipientName: hospital.hospitalRep.name,
       subject: "Temporary Login Code - Ctrl Create Labs",
-      otpCode: tempCode
+      otpCode: tempCode,
     });
 
-    console.log(`Hospital login token dispatched successfully to: ${hospital.hospitalDetails.contact.email}`);
+    console.log(
+      `Hospital login token dispatched successfully to: ${hospital.hospitalDetails.contact.email}`,
+    );
 
     return res.status(200).json({
       message: "Temporary login code sent to hospital email",
       hospital: {
         id: hospital._id,
         isVerified: hospital.isVerified,
-      }
+      },
     });
-
   } catch (err) {
     console.error("Error logging in hospital:", err.message);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 const verifyHospitalLogin = async (req, res) => {
   try {
@@ -220,7 +228,7 @@ const verifyHospitalLogin = async (req, res) => {
 };
 
 // Helper: Generate hospital code
-async function generateHospitalCode (hospitalName, address) {
+async function generateHospitalCode(hospitalName, address) {
   const words = hospitalName.trim().split(/\s+/);
   const acronym = words.map((w) => w[0].toUpperCase()).join("");
 
@@ -671,7 +679,7 @@ const updateHospital = async (req, res) => {
     const updatedHospital = await Hospitals.findByIdAndUpdate(
       id,
       { $set: updates },
-      { returnDocument: 'after', runValidators: true },
+      { returnDocument: "after", runValidators: true },
     );
 
     if (!updatedHospital) {
@@ -995,7 +1003,7 @@ const loginManager = async (req, res) => {
       time: now.toLocaleTimeString(),
     });
 
-    await who.save()
+    await who.save();
 
     // Response
     res.status(200).json({
@@ -1257,7 +1265,7 @@ const approveManagerCredentials = async (req, res) => {
     const manager = await Manager.findByIdAndUpdate(
       id,
       { resetPasswordApproved: "done" },
-      {hasChangedPassword:false},
+      { hasChangedPassword: false },
       { returnDocument: "after" },
     );
     return res.status(200).json({ message: "Reset approved" });
@@ -1334,7 +1342,7 @@ const changePassword = async (req, res) => {
       return res.status(400).json({ message: "Current password incorrect" });
 
     user.password = await bcrypt.hash(newPassword, 10);
-    user.hasChangedPassword = true
+    user.hasChangedPassword = true;
     await user.save();
 
     res.status(200).json({ message: "Password updated successfully" });
@@ -1530,6 +1538,6 @@ module.exports = {
   approveManagerCredentials,
   resetManagerPasswordReset,
   archiveHospital,
-  loginMistDeveloper
+  loginMistDeveloper,
   // getTotalStaff,
 };

@@ -1,65 +1,52 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const Staff = require("../../models/it.depart"); // adjust path
+const Staff = require("../../models/itAdmin/it.depart"); // adjust path
 
 // Block account
-const blockAccount = async (req, res) => {
+// Toggle block/unblock account status
+const toggleBlockAccount = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Fetch staff member and populate hospital details
     const hospitalStaff = await Staff.findById(id).populate("hospital");
+
+    // Validate existence and matching hospital code
     if (
       !hospitalStaff ||
-      hospitalStaff.code !== hospitalStaff.hospital.hosptalDetail.code
+      hospitalStaff.code !== hospitalStaff.hospital?.hosptalDetail?.code
     ) {
       return res.status(404).json({ error: "Staff not found" });
     }
 
-    hospitalStaff.staffAccounts.blocked = true; // mark inactive
+    // Toggle the current blocked state (defaults to false if undefined)
+    const isCurrentlyBlocked = Boolean(hospitalStaff.staffAccounts?.blocked);
+    hospitalStaff.staffAccounts.blocked = !isCurrentlyBlocked;
+
     await hospitalStaff.save();
 
-    return res
-      .status(200)
-      .json({ message: "Staff account blocked successfully" });
+    const isNowBlocked = hospitalStaff.staffAccounts.blocked;
+    const message = isNowBlocked
+      ? "Staff account blocked successfully"
+      : "Staff account unblocked successfully";
+
+    // Return status message and updated state for frontend sync
+    return res.status(200).json({
+      message,
+      blocked: isNowBlocked,
+    });
   } catch (err) {
-    console.error(err);
+    console.error("Error toggling block account:", err);
     return res
       .status(500)
-      .json({ error: "Server error while blocking account" });
-  }
-};
-
-// Unblock account
-const unblockAccount = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const hospitalStaff = await Staff.findById(id).populate("hospital");
-    if (
-      !hospitalStaff ||
-      hospitalStaff.code !== hospitalStaff.hospital.hosptalDetail.code
-    ) {
-      return res.status(404).json({ error: "Staff not found" });
-    }
-
-    hospitalStaff.staffAccounts.blocked = false; //
-    await hospitalStaff.save();
-
-    return res
-      .status(200)
-      .json({ message: "Staff account unblocked successfully" });
-  } catch (err) {
-    console.error(err);
-    return res
-      .status(500)
-      .json({ error: "Server error while unblocking account" });
+      .json({ error: "Server error while toggling account block status" });
   }
 };
 
 const resetPasswordforAccount = async (req, res) => {
   try {
     const { id } = req.params;
-    const { temppasswordfromadmin } = req.body;
+    const { password } = req.body;
 
     // Find staff by ID and populate hospital reference
     const hospitalStaff = await Staff.findById(id).populate("hospital");
@@ -72,7 +59,7 @@ const resetPasswordforAccount = async (req, res) => {
 
     // Hash new temporary password
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(temppasswordfromadmin, salt);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
     // Reset password and mark hasChangedPassword = false
     hospitalStaff.staffAccounts.password = hashedPassword;
@@ -89,7 +76,4 @@ const resetPasswordforAccount = async (req, res) => {
   }
 };
 
-
-
-
-module.exports = { blockAccount, unblockAccount, resetPasswordforAccount };
+module.exports = { toggleBlockAccount, resetPasswordforAccount };

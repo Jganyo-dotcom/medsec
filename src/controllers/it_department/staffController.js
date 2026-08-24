@@ -2,7 +2,7 @@ const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const Brevo = require("@getbrevo/brevo");
 const jwt = require("jsonwebtoken");
-const HospitalIT = require("../../models/it.depart");
+const HospitalIT = require("../../models/itAdmin/it.depart");
 const Hospitals = require("../../models/hospital.schema");
 const loginLogs = require("../../models/loginLogs");
 const mongoose = require("mongoose");
@@ -11,9 +11,11 @@ const {
   editStaffSchema,
   resetPasswordSchema,
 } = require("../../validations/staffValidation/staff.validation");
-const lastEdited = require("../../models/lastEdited");
+const lastEdited = require("../../models/itAdmin/lastEdited");
 const deleteBy = require("../../models/deletedBy");
-const { sendUniversalMail } = require("../../utils");
+const { sendUniversalMail } = require("../../common/Managerutils");
+const ItAdminActionLogs = require("../../models/itAdmin/ItAdminActionLogs");
+const logITAction = require("../../common/ITutiles");
 
 // Register a new staff member
 
@@ -105,60 +107,129 @@ module.exports = { registerStaff };
 // Edit staff
 const editStaffById = async (req, res) => {
   try {
-    const { hospitalId, staffId } = req.params;
+    const { staffId } = req.params;
+    const { hospitalId } = req.user;
+    console.log("Editing staff document ID:", staffId);
+
+    // 1. Validate incoming body payload
     const { error, value } = editStaffSchema.validate(req.body);
-    if (error) return res.status(400).json({ error: error.details[0].message });
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
 
-    const hospital = await HospitalIT.findById(hospitalId);
-    if (!hospital) return res.status(404).json({ error: "Hospital not found" });
+    // 2. Fetch the specific HospitalIT document by its ID
+    const hospitalAdmin = await HospitalIT.findById(staffId);
+    if (!hospitalAdmin) {
+      return res.status(404).json({ error: "Staff member record not found" });
+    }
 
-    const staff = hospital.staffAccounts.id(staffId);
-    if (!staff) return res.status(404).json({ error: "Staff not found" });
+    // Security check: ensure this record belongs to the logged-in user's hospital
+    if (hospitalAdmin.hospital.toString() !== hospitalId.toString()) {
+      return res
+        .status(403)
+        .json({ error: "Unauthorized access to this record" });
+    }
 
-    // Check duplicates
-    if (value.email || value.phone) {
-      const existingStaff = hospital.staffAccounts.find(
-        (s) =>
-          (s.email === value.email || s.phone === value.phone) &&
-          s._id.toString() !== staffId,
-      );
-      if (existingStaff) {
-        return res.status(400).json({
-          error: "Another staff member already uses this email or phone.",
-        });
+    // 3. Extract and normalize fields to handle mismatch between Joi input and Mongoose Schema
+    const finalEmail = value.email ? value.email.toLowerCase() : undefined;
+    const finalPhone = value.phone || value.contact; // Map either frontend payload property to schema "phone"
+
+    // Construct the standard unified name if individual components are sent
+    let finalName = value.name;
+    if (!finalName && (value.firstName || value.lastName)) {
+      finalName = `${value.firstName || ""} ${value.lastName || ""}`.trim();
+    }
+
+    // 4. Duplicate Check across OTHER hospital staff documents
+    if (finalEmail || finalPhone) {
+      const duplicateQuery = {
+        _id: { $ne: staffId }, // Exclude this current staff document
+        $or: [],
+      };
+
+      if (finalEmail) {
+        duplicateQuery.$or.push({ "staffAccounts.email": finalEmail });
+      }
+      if (finalPhone) {
+        duplicateQuery.$or.push({ "staffAccounts.phone": finalPhone });
+      }
+
+      if (duplicateQuery.$or.length > 0) {
+        const duplicateExists = await HospitalIT.findOne(duplicateQuery);
+        if (duplicateExists) {
+          const existingEmail =
+            duplicateExists.staffAccounts?.email?.toLowerCase();
+          const isEmailDuplicate = existingEmail === finalEmail;
+
+          return res.status(400).json({
+            error: isEmailDuplicate
+              ? "Email already exists."
+              : "Phone number already exists.",
+          });
+        }
       }
     }
 
-    Object.assign(staff, value);
-    await hospital.save();
+    // 5. Construct the safe update object mapping Joi fields onto nested schema paths
+    const updateFields = {};
 
+    if (finalName) updateFields["staffAccounts.name"] = finalName;
+    if (finalEmail) updateFields["staffAccounts.email"] = finalEmail;
+    if (finalPhone) updateFields["staffAccounts.phone"] = finalPhone;
+    if (value.department)
+      updateFields["staffAccounts.department"] = value.department;
+    if (value.role) updateFields["staffAccounts.role"] = value.role;
+
+    // Safety check: only perform update if we actually mapped fields
+    if (Object.keys(updateFields).length === 0) {
+      return res.status(400).json({ error: "No modifiable fields provided." });
+    }
+
+    // Run the direct atomic update query on the model
+    const updatedAdmin = await HospitalIT.findByIdAndUpdate(
+      staffId,
+      { $set: updateFields },
+      { returnDocument: "after", runValidators: true }, // Correct modern option to fix deprecation warning
+    );
+
+    // 6. Save edit audit log
     const now = new Date();
     const whoEdited = new lastEdited({
-      staff: staff._id,
-      date: now, // full date
+      staff: req.user.staffId, // Maintained exactly as requested
+      date: now,
       time: now.toLocaleTimeString("en-GB", { hour12: false }),
-      // e.g. "14:35:22" (24-hour format, no date)
-      editedWho: req.user.id,
+      editedWho: staffId,
       editedModel: "HospitalIT",
     });
-
     await whoEdited.save();
 
-    res.status(200).json({
+    await logITAction(
+      req.user.staffId, // Who did the action
+      "EDIT_STAFF", // Action key
+      staffId, // Target entity ID being edited
+      "HospitalIT", // Target entity type
+      "HospitalIT", // Actor model type (path)
+      hospitalId,
+    );
+
+    // 7. Return updated staff object from the nested field structure
+    const staffData = updatedAdmin.staffAccounts;
+    return res.status(200).json({
       message: "Staff updated successfully",
       staff: {
-        id: staff._id,
-        name: staff.name,
-        email: staff.email,
-        role: staff.role,
-        department: staff.department,
-        phone: staff.phone,
-        isActive: staff.isActive,
+        id: updatedAdmin._id,
+        name: staffData.name,
+        email: staffData.email,
+        role: staffData.role,
+        department: staffData.department,
+        phone: staffData.phone,
+        staffID: staffData.staffID,
+        isActive: staffData.isActive,
       },
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error while editing staff" });
+    console.error("Error editing staff:", err);
+    return res.status(500).json({ error: "Server error while editing staff" });
   }
 };
 
@@ -309,14 +380,13 @@ const deleteStaffById = async (req, res) => {
 // Login staff with failedAttempts handling
 
 const loginStaff = async (req, res) => {
-  // Start the transaction session
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
     const { email, password } = req.body;
 
-    // 1. Check if user typed email and password
+    // 1. Validate required inputs
     if (!email || !password) {
       await session.abortTransaction();
       session.endSession();
@@ -325,12 +395,12 @@ const loginStaff = async (req, res) => {
         .json({ message: "Email and password are required" });
     }
 
-    // 2. Find the staff record by email (Using the active session)
+    // 2. Find staff record by email
     let record = await HospitalIT.findOne({
       "staffAccounts.email": email,
     }).session(session);
 
-    // 3. Return 404 immediately if not found
+    // 3. Account not found (Cannot log to a hospital scope without an associated hospital ID)
     if (!record) {
       await session.abortTransaction();
       session.endSession();
@@ -339,19 +409,28 @@ const loginStaff = async (req, res) => {
 
     const staff = record.staffAccounts;
 
-    // 4. Check if account is blocked or disabled
+    // 4. Log and reject deactivated or blocked accounts
     if (!staff.isActive || staff.blocked || staff.isAdminDisabled) {
-      record.staffAccounts.blocked = false;
-      await record.save({ session });
-
-      await session.commitTransaction(); // Commit the unblock toggle change
+      await session.abortTransaction();
       session.endSession();
+
+      // Log blocked login attempt
+      await logITAction(
+        record._id,
+        "LOGIN",
+        record._id,
+        "HospitalIT",
+        "HospitalIT",
+        record.hospital,
+        "Failed",
+      );
+
       return res.status(403).json({
         message: "Your account is deactivated or blocked. Contact IT support.",
       });
     }
 
-    // 5. Check if password matches
+    // 5. Verify password
     const isPasswordMatch = await bcrypt.compare(password, staff.password);
     if (!isPasswordMatch) {
       record.staffAccounts.failedAttempts = staff.failedAttempts + 1;
@@ -361,25 +440,34 @@ const loginStaff = async (req, res) => {
       }
 
       await record.save({ session });
-      await session.commitTransaction(); // Commit failed attempts to DB
+      await session.commitTransaction(); // Commit failed attempt count to DB
       session.endSession();
+
+      // 🚨 LOG INVALID CREDENTIAL ATTEMPT
+      await logITAction(
+        record._id,
+        "LOGIN",
+        record._id,
+        "HospitalIT",
+        "HospitalIT",
+        record.hospital,
+        "Failed",
+      );
+
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // 🔄 FETCH LAST LOGIN DATE BEFORE CREATING THE NEW ONE
-    // This finds the most recent login log entry for this staff member
+    // Fetch previous login timestamp
     const lastLoginEntry = await loginLogs
       .findOne({ staff: record._id })
-      .sort({ createdAt: -1 }) // Sort by newest first
+      .sort({ createdAt: -1 })
       .session(session);
 
-    console.log(lastLoginEntry);
-
-    // Reset wrong attempts back to 0 on successful password entry
+    // Reset failed attempts on success
     record.staffAccounts.failedAttempts = 0;
     await record.save({ session });
 
-    // 6. Check if email is verified
+    // 6. Check email verification
     if (staff.isVerified === "any") {
       const otpCode = crypto.randomInt(100000, 999999).toString();
       const expiryTime = new Date();
@@ -404,7 +492,7 @@ const loginStaff = async (req, res) => {
       });
     }
 
-    // 7. Look up the connected Hospital's name
+    // 7. Lookup hospital info
     const associatedHospital = await Hospitals.findById(
       record.hospital,
     ).session(session);
@@ -412,7 +500,7 @@ const loginStaff = async (req, res) => {
       ? associatedHospital.hospitalDetails.name
       : "Unknown Hospital";
 
-    // 8. Create the JWT login session token
+    // 8. Sign JWT token
     const token = jwt.sign(
       {
         staffId: record._id,
@@ -425,7 +513,6 @@ const loginStaff = async (req, res) => {
       { expiresIn: process.env.EXPIRES_IN },
     );
 
-    // 🛠️ FIXED: Replaced broken "date.now()" and undefined "time" with native Date metrics
     const now = new Date();
     await loginLogs.create(
       [
@@ -441,26 +528,32 @@ const loginStaff = async (req, res) => {
       { session },
     );
 
-    // Commit all successful modifications cleanly together
     await session.commitTransaction();
     session.endSession();
 
-    // 9. Prepare payload (Including last login date)
-    const clientPayload = {
-      _id: record._id,
-      hospital: hospitalName,
-      name: staff.name,
-      department: staff.department,
-      email: staff.email,
-      role: staff.role,
-      hasChangedPassword: staff.hasChangedPassword,
-    };
+    // 9. Successful Login Audit Log
+    await logITAction(
+      record._id,
+      "LOGIN",
+      record._id,
+      "HospitalIT",
+      "HospitalIT",
+      record.hospital,
+      "Successful",
+    );
 
-    // Send payload response back to the client interface screen
     return res.status(200).json({
       success: true,
       token,
-      staff: clientPayload,
+      staff: {
+        _id: record._id,
+        hospital: hospitalName,
+        name: staff.name,
+        department: staff.department,
+        email: staff.email,
+        role: staff.role,
+        hasChangedPassword: staff.hasChangedPassword,
+      },
     });
   } catch (globalError) {
     await session.abortTransaction();
@@ -655,6 +748,59 @@ const revokeStaffAccess = async (req, res) => {
   }
 };
 
+const getActivityLogs = async (req, res) => {
+  try {
+    const { hospitalId } = req.user;
+    const { range = "Today", search = "" } = req.query;
+
+    if (!hospitalId) {
+      return res.status(400).json({ error: "Hospital ID context is missing." });
+    }
+
+    // Base query scoped to the current user's hospital
+    const filter = { hospital: hospitalId };
+
+    // 1. Calculate Date Range Filters
+    const now = new Date();
+    if (range === "Today") {
+      const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+      filter.createdAt = { $gte: startOfDay };
+    } else if (range === "This Week") {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+      filter.createdAt = { $gte: sevenDaysAgo };
+    } else if (range === "This Month") {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      filter.createdAt = { $gte: startOfMonth };
+    }
+    // "All Time" skips the createdAt filter constraint
+
+    // 2. Keyword Search Filter
+    if (search.trim()) {
+      filter.$or = [
+        { message: { $regex: search.trim(), $options: "i" } },
+        { action: { $regex: search.trim(), $options: "i" } },
+      ];
+    }
+
+    // 3. Fetch logs sorted newest first
+    const logs = await ItAdminActionLogs.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      count: logs.length,
+      logs,
+    });
+  } catch (err) {
+    console.error("Error fetching activity logs:", err);
+    return res.status(500).json({ error: "Failed to retrieve activity logs." });
+  }
+};
+
 module.exports = {
   resetStaffPassword,
   getAllStaff,
@@ -669,4 +815,5 @@ module.exports = {
   registerStaff,
   editStaffById,
   getStaffById,
+  getActivityLogs,
 };

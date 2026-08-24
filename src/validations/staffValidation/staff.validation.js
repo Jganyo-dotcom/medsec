@@ -1,7 +1,5 @@
 const Joi = require("joi");
 
-
-
 const addStaffSchema = Joi.object({
   firstName: Joi.string().trim().min(2).required(),
   lastName: Joi.string().trim().min(2).required(),
@@ -28,21 +26,30 @@ const addStaffSchema = Joi.object({
   staffId: Joi.string().min(3).optional(),
 }).or("staffID", "staffId"); // Accepts staffID or staffId from request
 
+
+
 const editStaffSchema = Joi.object({
-  name: Joi.string().min(3),
+  firstName: Joi.string().trim().allow(""),
+  lastName: Joi.string().trim().allow(""),
+  name: Joi.string().min(2).trim(),
+  email: Joi.string().email().trim().lowercase(),
+  phone: Joi.string().trim().allow(""),
+  contact: Joi.string().trim().allow(""), // Accepts frontend 'contact' input
+  department: Joi.string().min(2).trim(),
   role: Joi.string().valid(
     "Doctor",
     "Nurse",
-    "Technician",
+    "LabScientist",
+    "Pharmacist",
     "IT Admin",
-    "Other",
+    "Receptionist",
+    "Technician",
+    "Other"
   ),
-  email: Joi.string().email(),
-  phone: Joi.string()
-    .length(10)
-    .pattern(/^[0-9]+$/),
-  department: Joi.string().min(2),
-});
+  accessLevel: Joi.string().trim().allow(""),
+}).min(1);
+
+
 
 const resetPasswordSchema = Joi.object({
   newPassword: Joi.string().min(6).required(),
