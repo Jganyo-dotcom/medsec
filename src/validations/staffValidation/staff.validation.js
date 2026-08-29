@@ -18,6 +18,7 @@ const addStaffSchema = Joi.object({
       "Pharmacist",
       "IT Admin",
       "Receptionist",
+      "Lab Attendant"
     )
     .required(),
   department: Joi.string().min(2).required(),

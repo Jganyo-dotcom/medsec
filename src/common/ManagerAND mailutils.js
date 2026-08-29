@@ -2,11 +2,11 @@ const User = require("../models/manager/manager");
 const Hospital = require("../models/hospital.schema");
 const ActionLog = require("../models/manager/managerAuditLog");
 const { sendVerificationEmail } = require("../EmailTemplates/verificationMail");
-const { BrevoClient } = require("@getbrevo/brevo");
+
 const {
   getHospitalVerificationTemplate,
 } = require("../EmailTemplates/hospitalVerificationMail");
-const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
+const { send2FAEmail } = require("../EmailTemplates/authTwoTemplate");
 
 const logAction = async (
   userId,
@@ -114,6 +114,7 @@ function getSafeFields(entityType) {
       return ""; // no extra fields
   }
 }
+//////////////////////////////////////////////////////////////////////////////////////
 
 const sendUniversalMail = async (type, options) => {
   const {
@@ -125,6 +126,8 @@ const sendUniversalMail = async (type, options) => {
     custome,
   } = options;
   const currentYear = new Date().getFullYear();
+  const { BrevoClient } = require("@getbrevo/brevo");
+  const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
 
   // Basic input validation guard
   if (!recipientEmail || !recipientEmail.includes("@")) {
@@ -146,12 +149,8 @@ const sendUniversalMail = async (type, options) => {
       otpCode,
       currentYear,
     );
-  } else if (type === "Welcome_first_timers") {
-    htmlContent = getWelcomeTemplate(recipientName, currentYear, personOrg);
-  } else if (type === "forgetPassword") {
-    htmlContent = forgetPasswordTemplate(custome, currentYear);
-  } else {
-    throw new Error(`Unknown email template type requested: ${type}`);
+  } else if (type === "2FACTOR_AUTH") {
+    htmlContent = send2FAEmail(recipientName, otpCode, currentYear);
   }
 
   try {

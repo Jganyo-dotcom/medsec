@@ -20,7 +20,7 @@ const HospitalITSchema = new mongoose.Schema(
       department: { type: String, required: true },
       email: { type: String, unique: true, required: true },
       phone: { type: String, unique: true, required: true },
-      staffID: { type: String, default:"N/A"},
+      staffID: { type: String, default: "N/A" },
       role: {
         type: String,
         enum: [
@@ -30,6 +30,7 @@ const HospitalITSchema = new mongoose.Schema(
           "Pharmacist",
           "IT Admin",
           "Receptionist",
+          "Lab Attendant"
         ],
         required: true,
       },
@@ -43,6 +44,10 @@ const HospitalITSchema = new mongoose.Schema(
       failedAttempts: { type: Number, default: 0 }, // for login security
       verificationToken: { type: String, default: null },
       verificationTokenExpiry: { type: Date, default: null },
+      last2FAAt: { type: Date, default: null }, // Timestamp of last successful 2FA code verification
+      lastLoginAt: { type: Date, default: null }, // Timestamp of last active login session
+      twoFAToken: { type: String, default: null },
+      twoFATokenExpiry: { type: Date, default: null },
     },
 
     active: { type: Boolean, default: true },

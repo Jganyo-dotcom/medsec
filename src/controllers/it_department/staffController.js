@@ -13,9 +13,10 @@ const {
 } = require("../../validations/staffValidation/staff.validation");
 const lastEdited = require("../../models/itAdmin/lastEdited");
 const deleteBy = require("../../models/deletedBy");
-const { sendUniversalMail } = require("../../common/Managerutils");
+const { sendUniversalMail } = require("../../common/ManagerAND mailutils");
 const ItAdminActionLogs = require("../../models/itAdmin/ItAdminActionLogs");
 const logITAction = require("../../common/ITutiles");
+const Settings = require("../../models/itAdmin/settings");
 
 // Register a new staff member
 
@@ -76,8 +77,16 @@ const registerStaff = async (req, res) => {
         isAdminDisabled: req.user.isdisabled || false,
       },
     });
-
     await newHospitalIT.save();
+
+    await logITAction(
+      req.user.staffId, // 1. userId (Who performed it)
+      "CREATE_STAFF", // 2. action
+      newHospitalIT._id, // 3. entityId (Target staff ID - fixed variable name)
+      "HospitalIT", // 4. entityType (MUST be string "HospitalIT")
+      "HospitalIT", // 5. path (MUST be string "HospitalIT")
+      req.user.hospitalId, // 6. hospitalId
+    );
 
     const savedStaff = newHospitalIT.staffAccounts;
 
@@ -400,7 +409,7 @@ const loginStaff = async (req, res) => {
       "staffAccounts.email": email,
     }).session(session);
 
-    // 3. Account not found (Cannot log to a hospital scope without an associated hospital ID)
+    // 3. Account not found
     if (!record) {
       await session.abortTransaction();
       session.endSession();
@@ -410,11 +419,10 @@ const loginStaff = async (req, res) => {
     const staff = record.staffAccounts;
 
     // 4. Log and reject deactivated or blocked accounts
-    if (!staff.isActive || staff.blocked || staff.isAdminDisabled) {
+    if (!staff.isActive || staff.blocked) {
       await session.abortTransaction();
       session.endSession();
 
-      // Log blocked login attempt
       await logITAction(
         record._id,
         "LOGIN",
@@ -430,20 +438,31 @@ const loginStaff = async (req, res) => {
       });
     }
 
-    // 5. Verify password
-    const isPasswordMatch = await bcrypt.compare(password, staff.password);
-    if (!isPasswordMatch) {
-      record.staffAccounts.failedAttempts = staff.failedAttempts + 1;
+    // 5. Fetch hospital security settings from Setting model
+    const hospitalSetting = await Settings.findOne({
+      hospital: record.hospital,
+    }).session(session);
 
-      if (record.staffAccounts.failedAttempts >= 5) {
+    // Extract dynamic lockout limit (e.g., "5 attempts" -> 5)
+    const maxLockoutAttempts = hospitalSetting?.lockoutAttempts
+      ? parseInt(hospitalSetting.lockoutAttempts, 10)
+      : 5;
+
+    // 6. Verify password & enforce dynamic lockout threshold
+    const isPasswordMatch = await bcrypt.compare(password, staff.password);
+
+    if (!isPasswordMatch) {
+      record.staffAccounts.failedAttempts = (staff.failedAttempts || 0) + 1;
+
+      // Lock account if failed attempts hit setting limit
+      if (record.staffAccounts.failedAttempts >= maxLockoutAttempts) {
         record.staffAccounts.blocked = true;
       }
 
       await record.save({ session });
-      await session.commitTransaction(); // Commit failed attempt count to DB
+      await session.commitTransaction();
       session.endSession();
 
-      // 🚨 LOG INVALID CREDENTIAL ATTEMPT
       await logITAction(
         record._id,
         "LOGIN",
@@ -454,24 +473,24 @@ const loginStaff = async (req, res) => {
         "Failed",
       );
 
-      return res.status(401).json({ message: "Invalid email or password" });
+      return res.status(401).json({
+        message: record.staffAccounts.blocked
+          ? `Account locked due to ${maxLockoutAttempts} consecutive failed attempts.`
+          : "Invalid email or password",
+      });
     }
 
-    // Fetch previous login timestamp
-    const lastLoginEntry = await loginLogs
-      .findOne({ staff: record._id })
-      .sort({ createdAt: -1 })
-      .session(session);
-
-    // Reset failed attempts on success
+    // Reset failed attempts on successful password match
     record.staffAccounts.failedAttempts = 0;
     await record.save({ session });
+    console.log(staff.isVerified);
 
-    // 6. Check email verification
-    if (staff.isVerified === "any") {
+    // 7. Check initial account email verification
+    if (!staff.isVerified) {
       const otpCode = crypto.randomInt(100000, 999999).toString();
       const expiryTime = new Date();
       expiryTime.setMinutes(expiryTime.getMinutes() + 30);
+      console.log(otpCode)
 
       record.staffAccounts.verificationToken = otpCode;
       record.staffAccounts.verificationTokenExpiry = expiryTime;
@@ -486,21 +505,76 @@ const loginStaff = async (req, res) => {
 
       await session.commitTransaction();
       session.endSession();
+
       return res.status(403).json({
+        requireVerification: true,
         message:
           "Account is not verified. A 6-digit code has been sent to your email.",
       });
     }
 
-    // 7. Lookup hospital info
+    // 8. Lookup hospital details
     const associatedHospital = await Hospitals.findById(
       record.hospital,
     ).session(session);
+
     const hospitalName = associatedHospital
       ? associatedHospital.hospitalDetails.name
       : "Unknown Hospital";
 
-    // 8. Sign JWT token
+    // 9. Read 2FA rule from hospital Setting model (defaults to true if missing)
+    const is2FAEnabled = hospitalSetting ? hospitalSetting.twoFA : true;
+
+    if (is2FAEnabled) {
+      const lastLoginEntry = await loginLogs
+        .findOne({ staff: record._id })
+        .sort({ createdAt: -1 })
+        .session(session);
+
+      const now = new Date();
+      const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+      const last2FA = staff.last2FAAt ? new Date(staff.last2FAAt) : null;
+      const lastLogin = lastLoginEntry ? new Date(lastLoginEntry.date) : null;
+
+      const daysSince2FA = last2FA ? now - last2FA : Infinity;
+      const daysInactive = lastLogin ? now - lastLogin : Infinity;
+
+      // Require 2FA if never completed, >= 30 days since last 2FA, or >= 30 days inactive
+      const require2FA =
+        !last2FA ||
+        daysSince2FA >= THIRTY_DAYS_MS ||
+        daysInactive >= THIRTY_DAYS_MS;
+
+      if (require2FA) {
+        const twoFaCode = crypto.randomInt(100000, 999999).toString();
+        const expiryTime = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+
+        record.staffAccounts.twoFAToken = twoFaCode;
+        record.staffAccounts.twoFATokenExpiry = expiryTime;
+        await record.save({ session });
+
+        // Dispatch code via universal mailer
+        await sendUniversalMail("2FACTOR_AUTH", {
+          recipientEmail: staff.email,
+          recipientName: staff.name,
+          subject: "Security Verification: Your 2FA Login Code",
+          otpCode: twoFaCode,
+        });
+
+        await session.commitTransaction();
+        session.endSession();
+
+        return res.status(200).json({
+          require2FA: true,
+          email: staff.email,
+          message:
+            "2FA required. A verification code has been sent to your email.",
+        });
+      }
+    }
+
+    // 10. Issue JWT token (When 2FA is satisfied or disabled)
     const token = jwt.sign(
       {
         staffId: record._id,
@@ -531,7 +605,7 @@ const loginStaff = async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
-    // 9. Successful Login Audit Log
+    // 11. Log successful login
     await logITAction(
       record._id,
       "LOGIN",
@@ -544,6 +618,7 @@ const loginStaff = async (req, res) => {
 
     return res.status(200).json({
       success: true,
+      require2FA: false,
       token,
       staff: {
         _id: record._id,
@@ -558,11 +633,174 @@ const loginStaff = async (req, res) => {
   } catch (globalError) {
     await session.abortTransaction();
     session.endSession();
-    console.error("System error:", globalError);
+    console.error("System error during login:", globalError);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
 
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * Verify 2FA Login Code
+ * POST /accountStaff/verify-2fa
+ */
+const verify2FA = async (req, res) => {
+  try {
+    const { email, otpCode } = req.body;
+
+    if (!email || !otpCode) {
+      return res
+        .status(400)
+        .json({ message: "Email and OTP code are required." });
+    }
+
+    // 1. Fetch parent document containing the nested staff account
+    const hospitalIT = await HospitalIT.findOne({
+      "staffAccounts.email": email.toLowerCase().trim(),
+    });
+
+    if (!hospitalIT || !hospitalIT.staffAccounts) {
+      return res.status(404).json({ message: "Staff account not found." });
+    }
+
+    const account = hospitalIT.staffAccounts;
+
+    // 2. Validate OTP code match
+    if (!account.twoFAToken || account.twoFAToken !== otpCode.trim()) {
+      return res.status(400).json({ message: "Invalid verification code." });
+    }
+
+    // 3. Check expiration
+    if (
+      account.twoFATokenExpiry &&
+      new Date() > new Date(account.twoFATokenExpiry)
+    ) {
+      return res.status(400).json({
+        message: "Verification code has expired. Please log in again.",
+      });
+    }
+
+    // 4. Clear 2FA fields & update activity timestamps
+    account.twoFAToken = null;
+    account.twoFATokenExpiry = null;
+    account.last2FAAt = new Date();
+    account.lastLoginAt = new Date();
+
+    await hospitalIT.save();
+
+    // 5. Generate Auth Token
+    const token = jwt.sign(
+      {
+        staffId: hospitalIT._id,
+        role: account.role,
+        hospitalId: hospitalIT.hospital,
+        hospitalCode: hospitalIT.hospitalCode,
+        email: account.email,
+      },
+      process.env.JWT_SECRETE || "your_fallback_secret",
+      { expiresIn: "1d" },
+    );
+
+    // 6. Return response formatted for frontend
+    return res.status(200).json({
+      message: "2FA authentication successful.",
+      token,
+      staff: {
+        id: hospitalIT._id,
+        name: account.name,
+        email: account.email,
+        role: account.role,
+        department: account.department,
+      },
+    });
+  } catch (error) {
+    console.error("2FA Verification Error:", error);
+    return res
+      .status(500)
+      .json({ message: "Internal server error during 2FA verification." });
+  }
+};
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+const verifyStaffAccount = async (req, res) => {
+  try {
+    const { email, otpCode } = req.body;
+
+    if (!email || !otpCode) {
+      return res
+        .status(400)
+        .json({ message: "Email and OTP code are required." });
+    }
+
+    const hospitalIT = await HospitalIT.findOne({
+      "staffAccounts.email": email.toLowerCase().trim(),
+    });
+
+    if (!hospitalIT || !hospitalIT.staffAccounts) {
+      return res.status(404).json({ message: "Staff account not found." });
+    }
+
+    const account = hospitalIT.staffAccounts;
+
+    // 2. Validate token match
+    if (
+      !account.verificationToken ||
+      account.verificationToken !== otpCode.trim()
+    ) {
+      return res.status(400).json({ message: "Invalid verification code." });
+    }
+
+    // 3. Check expiration
+    if (
+      account.verificationTokenExpiry &&
+      new Date() > new Date(account.verificationTokenExpiry)
+    ) {
+      return res.status(400).json({
+        message: "Verification code has expired. Please request a new one.",
+      });
+    }
+
+    // 4. Update verification status and clear tokens
+    account.isVerified = true;
+    account.verificationToken = null;
+    account.verificationTokenExpiry = null;
+    account.lastLoginAt = new Date();
+
+    await hospitalIT.save();
+
+    // 5. Issue Token
+    const token = jwt.sign(
+      {
+        staffId: hospitalIT._id,
+        role: account.role,
+        hospitalId: hospitalIT.hospital,
+        hospitalCode: hospitalIT.hospitalCode,
+        email: account.email,
+      },
+      process.env.JWT_SECRETE || "your_fallback_secret",
+      { expiresIn: "1d" },
+    );
+
+    return res.status(200).json({
+      message: "Account verified successfully.",
+      token,
+      staff: {
+        id: hospitalIT._id,
+        name: account.name,
+        email: account.email,
+        role: account.role,
+        department: account.department,
+      },
+    });
+  } catch (error) {
+    console.error("Account Verification Error:", error);
+    return res
+      .status(500)
+      .json({ message: "Internal server error during account verification." });
+  }
+};
+
+//////////////////////////////////////////////////////////////////////
 const getStaffById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -604,7 +842,8 @@ const getStaffById = async (req, res) => {
       contact: account.phone,
       role: account.role,
       department: account.department,
-      status: account.isActive && !account.blocked ? "Active" : "Inactive",
+      status: account.isActive ? "Active" : "Inactive",
+      blocked: account.blocked,
       accessLevel: account.role,
       dateJoined: new Date(staffDoc.createdAt).toLocaleDateString("en-US", {
         year: "numeric",
@@ -757,7 +996,7 @@ const getActivityLogs = async (req, res) => {
       return res.status(400).json({ error: "Hospital ID context is missing." });
     }
 
-    // Base query scoped to the current user's hospital
+    // Scope query to current hospital
     const filter = { hospital: hospitalId };
 
     // 1. Calculate Date Range Filters
@@ -774,7 +1013,6 @@ const getActivityLogs = async (req, res) => {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       filter.createdAt = { $gte: startOfMonth };
     }
-    // "All Time" skips the createdAt filter constraint
 
     // 2. Keyword Search Filter
     if (search.trim()) {
@@ -784,8 +1022,16 @@ const getActivityLogs = async (req, res) => {
       ];
     }
 
-    // 3. Fetch logs sorted newest first
+    // 3. Fetch logs with populated performer and receiver details
     const logs = await ItAdminActionLogs.find(filter)
+      .populate({
+        path: "userId",
+        select:
+          "staffAccounts.name staffAccounts.email staffAccounts.role staffAccounts.department staffAccounts.staffID",
+      })
+      .populate({
+        path: "entityId", // Dynamically fetches Patient or HospitalIT based on entityType
+      })
       .sort({ createdAt: -1 })
       .limit(100)
       .lean();
@@ -806,7 +1052,8 @@ module.exports = {
   getAllStaff,
   deleteStaffById,
   loginStaff,
-  verifyStaffOTP,
+  verify2FA,
+  verifyStaffAccount,
   getInactiveStaff,
   getActiveStaff,
   sendStaffDetails,

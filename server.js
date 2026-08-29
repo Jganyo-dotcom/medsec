@@ -99,7 +99,7 @@ io.on("connection", (socket) => {
 
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/api", managerRoute);
-app.use("/api/accountControl", itStaffRouteForAccontControl);
+app.use("/api/accountStaff/accountControl", itStaffRouteForAccontControl);
 app.use("/api/accountStaff", staffAccounts);
 app.use("/api/medRecordsView", itStaffRouteForAccessInMedicalRecorsViewing);
 app.use("/api/module1", module1);

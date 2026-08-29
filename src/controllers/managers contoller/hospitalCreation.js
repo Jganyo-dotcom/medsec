@@ -15,7 +15,7 @@ const {
   logAction,
   getSafeFields,
   sendUniversalMail,
-} = require("../../common/Managerutils");
+} = require("../../common/ManagerAND mailutils");
 const ActionLogs = require("../../models/manager/managerAuditLog");
 
 // // Configure OAuth2 client once at the top of your server

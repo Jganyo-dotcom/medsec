@@ -4,7 +4,8 @@ const {
   getAllStaff,
   deleteStaffById,
   loginStaff,
-  verifyStaffOTP,
+  verifyStaffAccount,
+  verify2FA,
   getInactiveStaff,
   getActiveStaff,
   sendStaffDetails,
@@ -26,10 +27,12 @@ const router = express.Router();
 router.post("/register-staff", authmiddleware, registerStaff); // register staff
 router.post("/login-it-Admin/staffMember", loginStaff); // login staff
 router.get("/activity-logs", authmiddleware, getActivityLogs); // get inactive staffs
-router.post("/verify-login", verifyStaffOTP); // verify staff
+router.post("/verify-staff-account", verifyStaffAccount); // verify staff
+router.post("/verify-2fA", verify2FA); // login staff
+
 router.get("/get-staffs", authmiddleware, getAllStaff); // get all
 router.get("/staff/:id", authmiddleware, getStaffById);
-router.patch("/staff/:id/reset-password", resetPasswordforAccount);
+router.patch("/staff/:id/reset-password",authmiddleware, resetPasswordforAccount);
 
 // Block staff account
 router.patch("/staff/:id/toggle-block", authmiddleware, toggleBlockAccount);

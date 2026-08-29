@@ -1,5 +1,5 @@
 const patientBasicValidation = require("../../validations/staff validation/mod1");
-const Patient = require("../../models/patients");
+const Patient = require("../../models/patients/patients");
 
 // Create new patient
 const createPatient = async (req, res) => {
