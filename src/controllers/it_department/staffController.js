@@ -242,62 +242,9 @@ const editStaffById = async (req, res) => {
   }
 };
 
-// Disable/toggle staff
-const disableStaff = async (req, res) => {
-  try {
-    const { hospitalId, staffId } = req.params;
 
-    const hospital = await Hospitals.findById(hospitalId);
-    if (!hospital) return res.status(404).json({ error: "Hospital not found" });
 
-    const staff = await HospitalIT.findById(staffId);
-    if (!staff) return res.status(404).json({ error: "Staff not found" });
 
-    // Toggle blocked status
-    staff.staffAccounts.blocked = !staff.staffAccounts.blocked;
-    await staff.save();
-
-    res.status(200).json({
-      message: `Staff ${staff.staffAccounts.blocked ? "deactivated" : "activated"} successfully`,
-      blocked: staff.staffAccounts.blocked,
-    });
-  } catch (err) {
-    console.error("Error disabling staff:", err);
-    res.status(500).json({ error: "Server error while updating staff status" });
-  }
-};
-
-// Reset a staff member's password
-const resetStaffPassword = async (req, res) => {
-  try {
-    const { hospitalId, staffId } = req.params;
-    const { error, value } = resetPasswordSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
-
-    const hospital = await Hospitals.findById(hospitalId);
-    if (!hospital) return res.status(404).json({ error: "Hospital not found" });
-
-    const staff = await HospitalIT.findOne({
-      _id: staffId,
-      hospital: hospitalId,
-    });
-    if (!staff || staff.length === 0) {
-      return res.status(404).json({ error: "Staff not found" });
-    }
-    const salt = await bcrypt.genSalt(10);
-    staff.staffAccounts.password = await bcrypt.hash(value.newPassword, salt);
-    staff.staffAccounts.failedAttempts = 0; // reset attempts after password reset
-    staff.staffAccounts.hasChangedPassword = false;
-    await hospital.save();
-
-    res.status(200).json({ message: "Password reset successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error while resetting password" });
-  }
-};
 
 const getAllStaff = async (req, res) => {
   try {
@@ -1048,7 +995,6 @@ const getActivityLogs = async (req, res) => {
 };
 
 module.exports = {
-  resetStaffPassword,
   getAllStaff,
   deleteStaffById,
   loginStaff,
@@ -1058,7 +1004,6 @@ module.exports = {
   getActiveStaff,
   sendStaffDetails,
   revokeStaffAccess,
-  disableStaff,
   registerStaff,
   editStaffById,
   getStaffById,

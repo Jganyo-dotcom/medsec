@@ -15,7 +15,6 @@ const logITAction = async (
     let actorName = "Unknown User";
     let targetName = "Unknown Target";
     let resolvedHospitalId = hospitalId;
- 
 
     // 1. Resolve Actor Details (HospitalIT Staff) and Hospital ID
     if (path === "HospitalIT" && userId) {
@@ -34,6 +33,8 @@ const logITAction = async (
         // Look up target directly in Patient collection using patient.name
         const patient = await Patient.findById(entityId);
         targetName = patient?.name || "Unknown Patient";
+        const targetStaff = await HospitalIT.findById(userId);
+        actorName = targetStaff?.staffAccounts?.name || "Unknown Staff";
       } else {
         // Look up target in HospitalIT collection
         const targetStaff = await HospitalIT.findById(entityId);
