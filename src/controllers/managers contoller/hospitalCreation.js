@@ -1272,7 +1272,6 @@ const approveManagerCredentials = async (req, res) => {
     // 1. All updates go here
     resetPasswordApproved: "done", 
     hasChangedPassword: false, 
-    role: "MIST DEVELOPER" 
   },
   { 
     new: true 
