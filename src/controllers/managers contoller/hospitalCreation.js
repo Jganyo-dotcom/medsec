@@ -1267,11 +1267,18 @@ const approveManagerCredentials = async (req, res) => {
     console.log("hi");
     const id = req.params.id;
     const manager = await Manager.findByIdAndUpdate(
-      id,
-      { resetPasswordApproved: "done" },
-      { hasChangedPassword: false },
-      { returnDocument: "after" },
-    );
+  id,
+  { 
+    // 1. All updates go here
+    resetPasswordApproved: "done", 
+    hasChangedPassword: false, 
+    role: "MIST DEVELOPER" 
+  },
+  { 
+    new: true 
+  }
+);
+
     return res.status(200).json({ message: "Reset approved" });
   } catch (err) {
     console.log(err);
