@@ -791,9 +791,13 @@ const getAllPotentialManagers = async (req, res) => {
 const resetManagerPasswordReset = async (req, res) => {
   try {
     const managers = await Manager.find({
-      role: "MIST MANAGER",
-      resetPasswordApproved: "awaiting",
-    });
+  $or: [
+    { role: "MIST MANAGER" },
+    { role: "MIST DEVELOPER" }
+  ],
+  resetPasswordApproved: "awaiting",
+});
+
 
     if (!managers || managers.length === 0) {
       return res.status(404).json({ message: "No managers found" });
@@ -1263,11 +1267,17 @@ const approveManagerCredentials = async (req, res) => {
     console.log("hi");
     const id = req.params.id;
     const manager = await Manager.findByIdAndUpdate(
-      id,
-      { resetPasswordApproved: "done" },
-      { hasChangedPassword: false },
-      { returnDocument: "after" },
-    );
+  id,
+  { 
+    // 1. All updates go here
+    resetPasswordApproved: "done", 
+    hasChangedPassword: false, 
+  },
+  { 
+    new: true 
+  }
+);
+
     return res.status(200).json({ message: "Reset approved" });
   } catch (err) {
     console.log(err);
