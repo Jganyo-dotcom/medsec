@@ -52,6 +52,7 @@ const PatientSchema = new mongoose.Schema(
     tribe: { type: String, required: true },
     informant: { type: String, required: true },
     gender: { type: String, enum: ["Male", "Female", "Other"], required: true },
+    waiting: { type: Boolean, required: true, default: false },
     // Clinic/Ward assignment
     wardAssignment: { type: String, required: true },
 

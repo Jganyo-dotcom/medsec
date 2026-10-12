@@ -32,6 +32,7 @@ const createPatient = async (req, res) => {
       wardAssignment,
       createdBy: req.user.staff,
       hospitalCode: req.user.hospitalCode,
+      waiting: true,
       date: new Date(), // ensure schema-required field
       time: new Date().toLocaleTimeString(),
     });

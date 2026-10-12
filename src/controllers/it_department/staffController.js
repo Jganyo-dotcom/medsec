@@ -3,7 +3,7 @@ const crypto = require("crypto");
 const Brevo = require("@getbrevo/brevo");
 const jwt = require("jsonwebtoken");
 const HospitalIT = require("../../models/itAdmin/it.depart");
-const Hospitals = require("../../models/hospital.schema");
+const Hospitals = require("../../models/manager/hospital.schema");
 const loginLogs = require("../../models/loginLogs");
 const mongoose = require("mongoose");
 const {
@@ -242,10 +242,6 @@ const editStaffById = async (req, res) => {
   }
 };
 
-
-
-
-
 const getAllStaff = async (req, res) => {
   try {
     const hospitalCode = req.user.hospitalCode;
@@ -437,7 +433,7 @@ const loginStaff = async (req, res) => {
       const otpCode = crypto.randomInt(100000, 999999).toString();
       const expiryTime = new Date();
       expiryTime.setMinutes(expiryTime.getMinutes() + 30);
-      console.log(otpCode)
+      console.log(otpCode);
 
       record.staffAccounts.verificationToken = otpCode;
       record.staffAccounts.verificationTokenExpiry = expiryTime;
@@ -480,28 +476,35 @@ const loginStaff = async (req, res) => {
 
       const now = new Date();
       const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+      const FIVE_MINUTES_MS = 5 * 60 * 1000; // Grace window for just-verified sessions
 
       const last2FA = staff.last2FAAt ? new Date(staff.last2FAAt) : null;
       const lastLogin = lastLoginEntry ? new Date(lastLoginEntry.date) : null;
 
-      const daysSince2FA = last2FA ? now - last2FA : Infinity;
-      const daysInactive = lastLogin ? now - lastLogin : Infinity;
+      const msSince2FA = last2FA ? now.getTime() - last2FA.getTime() : Infinity;
+      const msInactive = lastLogin
+        ? now.getTime() - lastLogin.getTime()
+        : Infinity;
 
-      // Require 2FA if never completed, >= 30 days since last 2FA, or >= 30 days inactive
+      // 1. If they successfully completed 2FA within the last 5 minutes, let them straight in!
+      const justVerified = msSince2FA < FIVE_MINUTES_MS;
+
+      // 2. Otherwise, enforce standard security rules
       const require2FA =
         !last2FA ||
-        daysSince2FA >= THIRTY_DAYS_MS ||
-        daysInactive >= THIRTY_DAYS_MS;
+        msSince2FA >= THIRTY_DAYS_MS ||
+        (!justVerified && msInactive >= THIRTY_DAYS_MS);
 
       if (require2FA) {
         const twoFaCode = crypto.randomInt(100000, 999999).toString();
-        const expiryTime = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+        const expiryTime = new Date(Date.now() + 10 * 60 * 1000);
 
         record.staffAccounts.twoFAToken = twoFaCode;
         record.staffAccounts.twoFATokenExpiry = expiryTime;
-        await record.save({ session });
 
-        // Dispatch code via universal mailer
+        // Explicit tracking notice for Mongoose compilation layers
+        record.markModified("staffAccounts");
+        await record.save({ session });
         await sendUniversalMail("2FACTOR_AUTH", {
           recipientEmail: staff.email,
           recipientName: staff.name,
@@ -627,11 +630,14 @@ const verify2FA = async (req, res) => {
       });
     }
 
-    // 4. Clear 2FA fields & update activity timestamps
+    // 4. Clear 2FA fields & update activity timestamps to right now
     account.twoFAToken = null;
     account.twoFATokenExpiry = null;
-    account.last2FAAt = new Date();
-    account.lastLoginAt = new Date();
+    account.last2FAAt = new Date(); // 👈 Sets the 2FA verification mark to today
+    account.lastLoginAt = new Date(); // 👈 Sets the login activity mark to today
+
+    // 🔥 CRITICAL FIX: Tell Mongoose that the nested staffAccounts object has changed!
+    hospitalIT.markModified("staffAccounts");
 
     await hospitalIT.save();
 
@@ -667,6 +673,7 @@ const verify2FA = async (req, res) => {
       .json({ message: "Internal server error during 2FA verification." });
   }
 };
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////
 const verifyStaffAccount = async (req, res) => {

@@ -1,5 +1,5 @@
 const User = require("../models/manager/manager");
-const Hospital = require("../models/hospital.schema");
+const Hospital = require("../models/manager/hospital.schema");
 const ActionLog = require("../models/manager/managerAuditLog");
 const { sendVerificationEmail } = require("../EmailTemplates/verificationMail");
 

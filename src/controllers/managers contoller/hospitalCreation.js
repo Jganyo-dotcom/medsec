@@ -1,4 +1,4 @@
-const Hospitals = require("../../models/hospital.schema");
+const Hospitals = require("../../models/manager/hospital.schema")
 const validateCreateHospital = require("../../validations/manager validations/validations");
 const HospitalIT = require("../../models/itAdmin/it.depart");
 const bcrypt = require("bcrypt");
