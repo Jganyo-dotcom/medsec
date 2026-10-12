@@ -628,6 +628,7 @@ const verify2FA = async (req, res) => {
     }
 
     // 4. Clear 2FA fields & update activity timestamps
+    account.isVerified = true;
     account.twoFAToken = null;
     account.twoFATokenExpiry = null;
     account.last2FAAt = new Date();
